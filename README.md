@@ -24,12 +24,12 @@ func main() {
 	c, err := gremgo.NewClient("127.0.0.1:8182")
 	if err != nil {
 		fmt.Println(err)
-    return
+    		return
 	}
 	res, err := c.Execute("g.V(x)", map[string]string{"x": "1234"})
 	if err != nil {
 		fmt.Println(err)
-    return
+    		return
 	}
 	fmt.Println(res)
 }
