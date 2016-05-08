@@ -10,7 +10,7 @@ go get github.com/qasaur/gremgo
 
 Example
 ==========
-```
+```go
 package main
 
 import (
