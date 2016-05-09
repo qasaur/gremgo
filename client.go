@@ -22,7 +22,7 @@ func Dial(host string) (c Client, err error) {
 	// Initializes client
 
 	c.host = "ws://" + host
-	c.reqchan = make(chan []byte, 25)
+	c.reqchan = make(chan []byte, 1)
 	c.reschan = make(map[string]chan int)
 	c.results = make(map[string]map[string]interface{})
 	c.connection = true
