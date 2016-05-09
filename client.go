@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Client is a container for the gremgo interface TODO: Fix this doc
+// Client is a container for the gremgo client.
 type Client struct {
 	host       string
 	connection bool
@@ -16,8 +16,8 @@ type Client struct {
 	results    map[string]map[string]interface{}
 }
 
-// NewClient returns a gremgo client for database interaction
-func NewClient(host string) (c Client, err error) {
+// Dial returns a gremgo client for interaction with the Gremlin Server specified in the host IP.
+func Dial(host string) (c Client, err error) {
 
 	// Initializes client
 

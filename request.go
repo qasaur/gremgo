@@ -7,7 +7,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// Request is a container for all request parameters to be sent to the Gremlin Server
+// Request is a container for all request parameters to be sent to the Gremlin Server.
 type Request struct {
 	Requestid string  `json:"requestId"`
 	Op        string  `json:"op"`
@@ -15,7 +15,7 @@ type Request struct {
 	Args      ReqArgs `json:"args"`
 }
 
-// ReqArgs define the arguments for the Gremlin request
+// ReqArgs define the arguments for the Gremlin request.
 type ReqArgs struct {
 	Gremlin  string            `json:"gremlin"`
 	Language string            `json:"language"`
@@ -31,7 +31,7 @@ func prepareMessage(j []byte) (msg []byte) {
 	return
 }
 
-// Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result
+// Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
 func (c *Client) Execute(query string, bindings map[string]string) (r map[string]interface{}, err error) {
 	var req Request
 	var args ReqArgs

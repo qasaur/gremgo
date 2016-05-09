@@ -6,7 +6,6 @@ import (
 )
 
 // sortResponse ensures that data goes to the function that requested the data
-
 func sortResponse(c *Client, msg []byte) (err error) {
 	var data map[string]interface{}
 	err = json.Unmarshal(msg, &data)
