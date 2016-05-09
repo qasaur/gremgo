@@ -26,7 +26,10 @@ func main() {
 		fmt.Println(err)
     	return
 	}
-	res, err := c.Execute("g.V(x)", map[string]string{"x": "1234"}) // Sends a query to Gremlin Server with bindings
+	res, err := c.Execute( // Sends a query to Gremlin Server with bindings
+		"g.V(x)",
+		map[string]string{"x": "1234"}
+	)
 	if err != nil {
 		fmt.Println(err)
     	return
