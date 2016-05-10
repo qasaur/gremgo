@@ -21,12 +21,12 @@ import (
 )
 
 func main() {
-	c, err := gremgo.Dial("127.0.0.1:8182") // Returns a gremgo client to interact with
+	g, err := gremgo.Dial("127.0.0.1:8182") // Returns a gremgo client to interact with
 	if err != nil {
 		fmt.Println(err)
     	return
 	}
-	res, err := c.Execute( // Sends a query to Gremlin Server with bindings
+	res, err := g.Execute( // Sends a query to Gremlin Server with bindings
 		"g.V(x)",
 		map[string]string{"x": "1234"}
 	)
