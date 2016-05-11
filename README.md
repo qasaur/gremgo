@@ -1,4 +1,4 @@
-# gremgo - Gremlin driver for Golang
+# gremgo [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/qasaur/gremgo)
 
 gremgo is a fast, efficient, and easy-to-use client for the TinkerPop graph database stack. It is a Gremlin language driver which uses WebSockets to interface with Gremlin Server and has a strong emphasis on concurrency and scalability. Functionality is limited to simple executions of commands with bindings at the moment, but there are plans to include session-based interactions and other more advanced features in the future.
 
@@ -7,6 +7,11 @@ Installation
 ```
 go get github.com/qasaur/gremgo
 ```
+
+Documentation
+==========
+
+* [GoDoc](https://godoc.org/github.com/qasaur/gremgo)
 
 Example
 ==========
