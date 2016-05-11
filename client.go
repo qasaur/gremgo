@@ -36,8 +36,8 @@ func Dial(host string) (c Client, err error) {
 	go func() {
 		for c.connection == true {
 			select {
-			case msg := <-c.reqchan:
-				err = ws.WriteMessage(2, msg)
+			case msg := <-c.reqchan: // Wait for message send request
+				err = ws.WriteMessage(2, msg) // Write message
 				if err != nil {
 					log.Fatal(err)
 				}
