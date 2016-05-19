@@ -36,6 +36,7 @@ func formatRequest(req request) (msg []byte, err error) {
 
 type requester interface {
 	prepare() error
+	format() error
 }
 
 /////
@@ -63,6 +64,11 @@ func (req *evalRequest) prepare() (err error) {
 	return
 }
 
+func (req *evalRequest) format() (err error) {
+	req.prepared, err = formatRequest(req.request)
+	return
+}
+
 /////
 
 func (c *Client) sendRequest(msg []byte) {
@@ -73,6 +79,10 @@ func (c *Client) sendRequest(msg []byte) {
 
 func (c *Client) createRequest(req requester) (err error) {
 	err = req.prepare()
+	if err != nil {
+		return
+	}
+	err = req.format()
 	if err != nil {
 		return
 	}
