@@ -1,6 +1,9 @@
 package gremgo
 
-import "sync"
+import (
+	"io/ioutil"
+	"sync"
+)
 
 type client interface {
 }
@@ -9,7 +12,8 @@ type client interface {
 type Client struct {
 	conn      connector
 	requests  chan []byte
-	responses map[string]interface{}
+	responses chan []byte
+	results   map[string]interface{}
 	mutex     *sync.Mutex
 	buffer    map[string]map[int]interface{}
 }
@@ -19,7 +23,9 @@ func Dial(host string) (c Client, err error) {
 
 	// Initializes client
 	c.requests = make(chan []byte, 3)
-	c.responses = make(map[string]interface{})
+	c.responses = make(chan []byte, 3)
+	c.results = make(map[string]interface{})
+
 	c.buffer = make(map[string]map[int]interface{})
 	c.mutex = &sync.Mutex{}
 	c.conn = &ws{host: host}
@@ -31,6 +37,7 @@ func Dial(host string) (c Client, err error) {
 
 	go c.writeWorker()
 	go c.readWorker()
+	go c.responseWorker()
 
 	return
 }
@@ -46,11 +53,11 @@ func (c *Client) Execute(query string, bindings map[string]string) (response int
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
 func (c *Client) ExecuteFile(path string, bindings map[string]string) (response map[string]interface{}, err error) {
-	// s, err := ioutil.ReadFile(path) // Read script
-	// if err != nil {
-	// 	return
-	// }
-	// req := evalRequest{query: s, bindings: bindings}
-	// c.createRequest(req)
+	s, err := ioutil.ReadFile(path) // Read script
+	if err != nil {
+		return
+	}
+	req := evalRequest{query: string(s), bindings: bindings} // TODO: Make this cleaner
+	c.createRequest(&req)
 	return
 }

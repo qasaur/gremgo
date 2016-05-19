@@ -62,7 +62,7 @@ func (c *Client) readWorker() {
 			log.Fatal(err)
 		}
 		if msg != nil {
-			go c.handleResponse(msg)
+			c.responses <- msg
 		}
 	}
 }

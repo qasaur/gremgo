@@ -1,9 +1,6 @@
 package gremgo
 
-import (
-	"encoding/json"
-	"log"
-)
+import "encoding/json"
 
 type response struct {
 	Result    interface{}            `json:"result"`
@@ -11,49 +8,61 @@ type response struct {
 	Status    map[string]interface{} `json:"status"`
 }
 
+func (c *Client) responseWorker() {
+	for {
+		select {
+		case msg := <-c.responses:
+			go c.handleResponse(msg)
+		default:
+		}
+	}
+}
+
 // handleResponse classifies the data and sends it to the appropriate function
 func (c *Client) handleResponse(msg []byte) (err error) {
 	var r response
-	err = json.Unmarshal(msg, &r) // Unwrap message
+	err = unmarshalResponse(msg, &r)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	code := r.Status["code"]
+	code := r.Status["code"].(string)
+	resp := determineResponse(code)
+	resp.process()
+	c.saveResponse(resp)
+	return
+}
+
+func unmarshalResponse(msg []byte, r *response) (err error) {
+	err = json.Unmarshal(msg, r) // Unwrap message
+	return
+}
+
+func determineResponse(code string) (resp responder) {
 	switch {
 	case code == "200":
-		resp := successfulResponse{response: r}
-		c.processResponse(&resp)
+		resp = successfulResponse{}
 	case code == "204":
-		resp := emptyResponse{response: r}
-		c.processResponse(&resp)
+		resp = emptyResponse{}
 	case code == "206":
-		resp := partialResponse{response: r}
-		c.processResponse(&resp)
+		resp = partialResponse{}
 	default:
-		resp := erroneousResponse{response: r}
-		c.processResponse(&resp)
+		resp = erroneousResponse{}
 	}
 	return
 }
 
-func (c *Client) processResponse(resp responseHandler) {
-	data, id, err := resp.process()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// TODO: Fix processing of partial requests
+func (c *Client) saveResponse(resp responder) {
 	c.mutex.Lock()
-	c.responses[id] = data
+	// c.results[resp.getId()] = resp.getData() TODO: Fix this
 	c.mutex.Unlock()
-	return
 }
 
 func (c *Client) retrieveResponse(id string) (data interface{}) {
 	for {
 		c.mutex.Lock()
-		data = c.responses[id]
+		data = c.results[id]
 		if data != nil {
-			delete(c.responses, id)
+			delete(c.results, id)
 			c.mutex.Unlock()
 			break
 		}
@@ -64,7 +73,7 @@ func (c *Client) retrieveResponse(id string) (data interface{}) {
 
 /////
 
-type responseHandler interface {
+type responder interface {
 	process() (interface{}, string, error)
 }
 
@@ -74,7 +83,7 @@ type successfulResponse struct {
 	response
 }
 
-func (res *successfulResponse) process() (data interface{}, id string, err error) {
+func (res successfulResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
 }
 
@@ -84,7 +93,7 @@ type emptyResponse struct {
 	response
 }
 
-func (res *emptyResponse) process() (data interface{}, id string, err error) {
+func (res emptyResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
 }
 
@@ -94,7 +103,7 @@ type partialResponse struct {
 	response
 }
 
-func (res *partialResponse) process() (data interface{}, id string, err error) {
+func (res partialResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
 }
 
@@ -104,6 +113,6 @@ type erroneousResponse struct {
 	response
 }
 
-func (res *erroneousResponse) process() (data interface{}, id string, err error) {
+func (res erroneousResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
 }
