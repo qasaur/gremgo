@@ -8,18 +8,6 @@ type response struct {
 	Status    map[string]interface{} `json:"status"`
 }
 
-/////
-
-func (c *Client) responseWorker() {
-	for {
-		select {
-		case msg := <-c.responses:
-			go c.handleResponse(msg)
-		default:
-		}
-	}
-}
-
 // handleResponse classifies the data and sends it to the appropriate function
 func (c *Client) handleResponse(msg []byte) (err error) {
 	var r response

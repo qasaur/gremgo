@@ -15,9 +15,9 @@ type request struct {
 }
 
 // formatMessage takes a request type and formats it into being able to be delivered to Gremlin Server
-func formatRequest(req request) (msg []byte, err error) {
+func formatRequest(req requester) (msg []byte, err error) {
 
-	j, err := json.Marshal(req) // Formats request into byte format
+	j, err := json.Marshal(req.getRequest()) // Formats request into byte format
 	if err != nil {
 		return
 	}
@@ -36,8 +36,8 @@ func formatRequest(req request) (msg []byte, err error) {
 
 type requester interface {
 	prepare() error
-	format() error
 	getID() string
+	getRequest() request
 }
 
 /////
@@ -63,31 +63,25 @@ func (req *evalRequest) prepare() (err error) {
 	return
 }
 
-func (req *evalRequest) format() (err error) {
-	req.prepared, err = formatRequest(req.request)
-	return
-}
-
 func (req *evalRequest) getID() (id string) {
 	return req.Requestid
 }
 
-/////
-
-func (c *Client) sendRequest(msg []byte) {
-	c.requests <- msg // Send query to write worker
+func (req *evalRequest) getRequest() request {
+	return req.request
 }
 
 /////
 
-func (c *Client) createRequest(req requester) (err error) {
+func (c *Client) sendRequest(req requester) (err error) {
 	err = req.prepare()
 	if err != nil {
 		return
 	}
-	err = req.format()
+	msg, err := formatRequest(req)
 	if err != nil {
 		return
 	}
+	c.requests <- msg // Send query to write worker
 	return
 }
