@@ -47,17 +47,19 @@ func (c *Client) Execute(query string, bindings map[string]string) (response int
 	req := evalRequest{query: query, bindings: bindings}
 	c.createRequest(&req)
 	c.sendRequest(req.prepared)
-	response = c.retrieveResponse(req.request.Requestid)
+	response = c.retrieveResponse(&req)
 	return
 }
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
-func (c *Client) ExecuteFile(path string, bindings map[string]string) (response map[string]interface{}, err error) {
+func (c *Client) ExecuteFile(path string, bindings map[string]string) (response interface{}, err error) {
 	s, err := ioutil.ReadFile(path) // Read script
 	if err != nil {
 		return
 	}
 	req := evalRequest{query: string(s), bindings: bindings} // TODO: Make this cleaner
 	c.createRequest(&req)
+	c.sendRequest(req.prepared)
+	response = c.retrieveResponse(&req)
 	return
 }

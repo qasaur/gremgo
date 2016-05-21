@@ -37,6 +37,7 @@ func formatRequest(req request) (msg []byte, err error) {
 type requester interface {
 	prepare() error
 	format() error
+	getID() string
 }
 
 /////
@@ -59,14 +60,16 @@ func (req *evalRequest) prepare() (err error) {
 	req.request.Args["language"] = "gremlin-groovy"
 	req.request.Args["bindings"] = req.bindings
 
-	req.prepared, err = formatRequest(req.request)
-
 	return
 }
 
 func (req *evalRequest) format() (err error) {
 	req.prepared, err = formatRequest(req.request)
 	return
+}
+
+func (req *evalRequest) getID() (id string) {
+	return req.Requestid
 }
 
 /////

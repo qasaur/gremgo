@@ -8,6 +8,8 @@ type response struct {
 	Status    map[string]interface{} `json:"status"`
 }
 
+/////
+
 func (c *Client) responseWorker() {
 	for {
 		select {
@@ -53,16 +55,17 @@ func determineResponse(code string) (resp responder) {
 
 func (c *Client) saveResponse(resp responder) {
 	c.mutex.Lock()
-	// c.results[resp.getId()] = resp.getData() TODO: Fix this
+	c.results[resp.getID()] = resp.getData() // TODO: Fix this
 	c.mutex.Unlock()
 }
 
-func (c *Client) retrieveResponse(id string) (data interface{}) {
+func (c *Client) retrieveResponse(req requester) (data interface{}) {
+	reqID := req.getID()
 	for {
 		c.mutex.Lock()
-		data = c.results[id]
+		data = c.results[reqID]
 		if data != nil {
-			delete(c.results, id)
+			delete(c.results, reqID)
 			c.mutex.Unlock()
 			break
 		}
@@ -75,6 +78,13 @@ func (c *Client) retrieveResponse(id string) (data interface{}) {
 
 type responder interface {
 	process() (interface{}, string, error)
+	getID() string
+	getData() responseData
+}
+
+/////
+
+type responseData struct {
 }
 
 /////
@@ -87,6 +97,14 @@ func (res successfulResponse) process() (data interface{}, id string, err error)
 	return res.Result, res.Requestid, nil
 }
 
+func (res successfulResponse) getID() (id string) {
+	return
+}
+
+func (res successfulResponse) getData() (data responseData) {
+	return
+}
+
 /////
 
 type emptyResponse struct {
@@ -95,6 +113,14 @@ type emptyResponse struct {
 
 func (res emptyResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
+}
+
+func (res emptyResponse) getID() (id string) {
+	return
+}
+
+func (res emptyResponse) getData() (data responseData) {
+	return
 }
 
 /////
@@ -107,6 +133,14 @@ func (res partialResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
 }
 
+func (res partialResponse) getID() (id string) {
+	return
+}
+
+func (res partialResponse) getData() (data responseData) {
+	return
+}
+
 /////
 
 type erroneousResponse struct {
@@ -115,4 +149,12 @@ type erroneousResponse struct {
 
 func (res erroneousResponse) process() (data interface{}, id string, err error) {
 	return res.Result, res.Requestid, nil
+}
+
+func (res erroneousResponse) getID() (id string) {
+	return
+}
+
+func (res erroneousResponse) getData() (data responseData) {
+	return
 }
