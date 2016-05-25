@@ -6,14 +6,6 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// request is a container for all evaluation request parameters to be sent to the Gremlin Server.
-type request struct {
-	Requestid string                 `json:"requestId"`
-	Op        string                 `json:"op"`
-	Processor string                 `json:"processor"`
-	Args      map[string]interface{} `json:"args"`
-}
-
 // formatMessage takes a request type and formats it into being able to be delivered to Gremlin Server
 func formatRequest(req requester) (msg []byte, err error) {
 
@@ -38,6 +30,16 @@ type requester interface {
 	prepare() error
 	getID() string
 	getRequest() request
+}
+
+/////
+
+// request is a container for all evaluation request parameters to be sent to the Gremlin Server.
+type request struct {
+	Requestid string                 `json:"requestId"`
+	Op        string                 `json:"op"`
+	Processor string                 `json:"processor"`
+	Args      map[string]interface{} `json:"args"`
 }
 
 /////

@@ -3,19 +3,19 @@ package gremgo
 import "encoding/json"
 
 type response struct {
-	Result    interface{}            `json:"result"`
-	Requestid string                 `json:"requestId"`
-	Status    map[string]interface{} `json:"status"`
+	Result    map[string]string `json:"result"`
+	Requestid string            `json:"requestId"`
+	Status    map[string]string `json:"status"`
 }
 
-// handleResponse classifies the data and sends it to the appropriate function
+// handleResponse classifies the data, sorts the data, and saves it for retrieval
 func (c *Client) handleResponse(msg []byte) (err error) {
 	var r response
 	err = unmarshalResponse(msg, &r)
 	if err != nil {
 		return
 	}
-	code := r.Status["code"].(string)
+	code := r.Status["code"]
 	resp := determineResponse(code)
 	resp.process()
 	c.saveResponse(resp)

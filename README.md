@@ -27,7 +27,8 @@ import (
 )
 
 func main() {
-	g, err := gremgo.Dial("127.0.0.1:8182") // Returns a gremgo client to interact with
+	dialer := Ws{Host: "127.0.0.1:8182"} // Returns a WebSocket dialer to connect to Gremlin Server
+	g, err := gremgo.Dial(dialer) // Returns a gremgo client to interact with
 	if err != nil {
 		fmt.Println(err)
     	return

@@ -7,7 +7,7 @@ import (
 
 // Client is a container for the gremgo client.
 type Client struct {
-	conn      connector
+	conn      dialer
 	requests  chan []byte
 	responses chan []byte
 	results   map[string]interface{}
@@ -15,14 +15,14 @@ type Client struct {
 }
 
 // Dial returns a gremgo client for interaction with the Gremlin Server specified in the host IP.
-func Dial(conn connector) (c Client, err error) {
+func Dial(conn dialer) (c Client, err error) {
 
 	// Initializes client
 	c.conn = conn
-	c.requests = make(chan []byte, 3)
-	c.responses = make(chan []byte, 3)
+	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
+	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
 	c.results = make(map[string]interface{})
-	c.mutex = &sync.Mutex{}
+	c.mutex = &sync.Mutex{} // c.mutex ensures that response sorting is safe
 
 	// Connects to Gremlin Server
 	err = conn.connect()
@@ -38,7 +38,7 @@ func Dial(conn connector) (c Client, err error) {
 
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
 func (c *Client) Execute(query string, bindings map[string]string) (response interface{}, err error) {
-	req := evalRequest{query: query, bindings: bindings}
+	req := evalRequest{query: query, bindings: bindings} // Execute executes by default an evaulation request
 	c.sendRequest(&req)
 	response = c.retrieveResponse(&req)
 	return
@@ -46,7 +46,7 @@ func (c *Client) Execute(query string, bindings map[string]string) (response int
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
 func (c *Client) ExecuteFile(path string, bindings map[string]string) (response interface{}, err error) {
-	d, err := ioutil.ReadFile(path) // Read script
+	d, err := ioutil.ReadFile(path) // Read script from file
 	if err != nil {
 		return
 	}

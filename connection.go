@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type connector interface {
+type dialer interface {
 	connect() error
 	write([]byte) error
 	read() ([]byte, error)
@@ -19,7 +19,7 @@ WebSocket Connection
 */
 /////
 
-// Ws is the connector for a WebSocket connection
+// Ws is the dialer for a WebSocket connection
 type Ws struct {
 	Host string
 	conn *websocket.Conn
@@ -43,7 +43,7 @@ func (ws *Ws) read() (msg []byte, err error) {
 
 /////
 
-func (c *Client) writeWorker() {
+func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches messages as soon as it recieves them
 	for {
 		select {
 		case msg := <-c.requests: // Wait for message send request
@@ -56,14 +56,14 @@ func (c *Client) writeWorker() {
 	}
 }
 
-func (c *Client) readWorker() {
+func (c *Client) readWorker() { // readWorker works on a loop and sorts messages as soon as it recieves them
 	for {
 		msg, err := c.conn.read()
 		if err != nil {
 			log.Fatal(err)
 		}
 		if msg != nil {
-			go c.handleResponse(msg)
+			go c.handleResponse(msg) // Send message for sorting and retrieval
 		}
 	}
 }
