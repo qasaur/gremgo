@@ -11,7 +11,7 @@ type response struct {
 // handleResponse classifies the data, sorts the data, and saves it for retrieval
 func (c *Client) handleResponse(msg []byte) (err error) {
 	var r response
-	err = unmarshalResponse(msg, &r)
+	err = json.Unmarshal(msg, &r) // Unwrap message
 	if err != nil {
 		return
 	}
@@ -19,11 +19,6 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 	resp := determineResponse(code)
 	resp.process()
 	c.saveResponse(resp)
-	return
-}
-
-func unmarshalResponse(msg []byte, r *response) (err error) {
-	err = json.Unmarshal(msg, r) // Unwrap message
 	return
 }
 

@@ -1,9 +1,6 @@
 package gremgo
 
-import (
-	"io/ioutil"
-	"sync"
-)
+import "sync"
 
 // Client is a container for the gremgo client.
 type Client struct {
@@ -37,22 +34,22 @@ func Dial(conn dialer) (c Client, err error) {
 }
 
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
-func (c *Client) Execute(query string, bindings map[string]string) (response interface{}, err error) {
-	req := evalRequest{query: query, bindings: bindings} // Execute executes by default an evaulation request
-	c.sendRequest(&req)
-	response = c.retrieveResponse(&req)
-	return
-}
+// func (c *Client) Execute(query string, bindings map[string]string) (response interface{}, err error) {
+// 	req := evalRequest{query: query, bindings: bindings} // Execute defaults to an evaulation request
+// 	// c.sendRequest(&req)
+// 	response = c.retrieveResponse(&req)
+// 	return
+// }
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
-func (c *Client) ExecuteFile(path string, bindings map[string]string) (response interface{}, err error) {
-	d, err := ioutil.ReadFile(path) // Read script from file
-	if err != nil {
-		return
-	}
-	q := string(d)
-	req := evalRequest{query: q, bindings: bindings} // TODO: Make this cleaner
-	c.sendRequest(&req)
-	response = c.retrieveResponse(&req)
-	return
-}
+// func (c *Client) ExecuteFile(path string, bindings map[string]string) (response interface{}, err error) {
+// 	d, err := ioutil.ReadFile(path) // Read script from file
+// 	if err != nil {
+// 		return
+// 	}
+// 	q := string(d)
+// 	req := evalRequest{query: q, bindings: bindings}
+// 	// c.sendRequest(&req)
+// 	response = c.retrieveResponse(&req)
+// 	return
+// }
