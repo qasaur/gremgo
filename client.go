@@ -7,19 +7,23 @@ type Client struct {
 	conn      dialer
 	requests  chan []byte
 	responses chan []byte
-	results   map[string]interface{}
-	mutex     *sync.Mutex
+	results   map[string][]interface{}
+	respMutex *sync.RWMutex
+}
+
+func newClient() (c Client) {
+	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
+	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
+	c.results = make(map[string][]interface{})
+	c.respMutex = &sync.RWMutex{} // c.mutex ensures that thread sorting is safe
+	return
 }
 
 // Dial returns a gremgo client for interaction with the Gremlin Server specified in the host IP.
 func Dial(conn dialer) (c Client, err error) {
 
-	// Initializes client
+	c = newClient()
 	c.conn = conn
-	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
-	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
-	c.results = make(map[string]interface{})
-	c.mutex = &sync.Mutex{} // c.mutex ensures that response sorting is safe
 
 	// Connects to Gremlin Server
 	err = conn.connect()

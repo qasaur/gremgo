@@ -71,8 +71,7 @@ func TestRequestDispatch(t *testing.T) {
 			"language": "gremlin-groovy",
 		},
 	}
-	c := Client{}
-	c.requests = make(chan []byte, 2)
+	c := newClient()
 	msg, err := packageRequest(testRequest)
 	if err != nil {
 		t.Error(err)

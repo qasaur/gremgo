@@ -3,141 +3,51 @@ package gremgo
 import "encoding/json"
 
 type response struct {
-	Result    map[string]string `json:"result"`
-	Requestid string            `json:"requestId"`
-	Status    map[string]string `json:"status"`
+	data      interface{}
+	requestid string
+	code      int
+}
+
+// func (c *Client) getResponse() (msg []byte) {
+// 	msg = <-c.responses
+// 	return
+// }
+
+func marshalResponse(msg []byte) (resp response, err error) {
+	var j map[string]interface{}
+	err = json.Unmarshal(msg, &j)
+
+	status := j["status"].(map[string]interface{})
+	result := j["result"].(map[string]interface{})
+	code := status["code"].(float64)
+
+	resp.code = int(code)
+	resp.data = result["data"]
+	resp.requestid = j["requestId"].(string)
+	return
+}
+
+func (c *Client) sortResponse(resp response) {
+	c.respMutex.RLock()
+	container := c.results[resp.requestid]
+	c.respMutex.RUnlock()
+	data := append(container, resp.data)
+	c.respMutex.Lock()
+	c.results[resp.requestid] = data
+	c.respMutex.Unlock()
+	return
 }
 
 // handleResponse classifies the data, sorts the data, and saves it for retrieval
-func (c *Client) handleResponse(msg []byte) (err error) {
-	var r response
-	err = json.Unmarshal(msg, &r) // Unwrap message
-	if err != nil {
-		return
-	}
-	code := r.Status["code"]
-	resp := determineResponse(code)
-	resp.process()
-	c.saveResponse(resp)
-	return
-}
-
-func determineResponse(code string) (resp responder) {
-	switch {
-	case code == "200":
-		resp = successfulResponse{}
-	case code == "204":
-		resp = emptyResponse{}
-	case code == "206":
-		resp = partialResponse{}
-	default:
-		resp = erroneousResponse{}
-	}
-	return
-}
-
-func (c *Client) saveResponse(resp responder) {
-	c.mutex.Lock()
-	c.results[resp.getID()] = resp.getData() // TODO: Fix this
-	c.mutex.Unlock()
-}
-
-func (c *Client) retrieveResponse(req requester) (data interface{}) {
-	reqID := req.getID()
-	for {
-		c.mutex.Lock()
-		data = c.results[reqID]
-		if data != nil {
-			delete(c.results, reqID)
-			c.mutex.Unlock()
-			break
-		}
-		c.mutex.Unlock()
-	}
-	return
-}
-
-/////
-
-type responder interface {
-	process() (interface{}, string, error)
-	getID() string
-	getData() responseData
-}
-
-/////
-
-type responseData struct {
-}
-
-/////
-
-type successfulResponse struct {
-	response
-}
-
-func (res successfulResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-func (res successfulResponse) getID() (id string) {
-	return
-}
-
-func (res successfulResponse) getData() (data responseData) {
-	return
-}
-
-/////
-
-type emptyResponse struct {
-	response
-}
-
-func (res emptyResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-func (res emptyResponse) getID() (id string) {
-	return
-}
-
-func (res emptyResponse) getData() (data responseData) {
-	return
-}
-
-/////
-
-type partialResponse struct {
-	response
-}
-
-func (res partialResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-func (res partialResponse) getID() (id string) {
-	return
-}
-
-func (res partialResponse) getData() (data responseData) {
-	return
-}
-
-/////
-
-type erroneousResponse struct {
-	response
-}
-
-func (res erroneousResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-func (res erroneousResponse) getID() (id string) {
-	return
-}
-
-func (res erroneousResponse) getData() (data responseData) {
-	return
-}
+// func (c *Client) handleResponse(msg []byte) (err error) {
+// 	var r response
+// 	err = json.Unmarshal(msg, &r) // Unwrap message
+// 	if err != nil {
+// 		return
+// 	}
+// 	code := r.Status["code"]
+// 	resp := determineResponse(code)
+// 	resp.process()
+// 	c.saveResponse(resp)
+// 	return
+// }
