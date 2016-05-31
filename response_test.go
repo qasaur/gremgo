@@ -44,21 +44,18 @@ var dummyPartialResponse2Marshalled = response{
 	data:      "testPartialData2",
 }
 
-// func TestResponseHandling(t *testing.T) {
-// 	c := newClient()
-//
-// 	c.handleResponse(dummySuccessfulResponse)
-//
-// 	var expected []interface{}
-// 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
-//
-// 	fmt.Println(expected)
-// 	fmt.Println(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid))
-//
-// 	if reflect.DeepEqual(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid), expected) != true {
-// 		t.Fail()
-// 	}
-// }
+func TestResponseHandling(t *testing.T) {
+	c := newClient()
+
+	c.handleResponse(dummySuccessfulResponse)
+
+	var expected []interface{}
+	expected = append(expected, dummySuccessfulResponseMarshalled.data)
+
+	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid)).String() {
+		t.Error("Expected data type does not match actual.")
+	}
+}
 
 func TestResponseMarshalling(t *testing.T) {
 	resp, err := marshalResponse(dummySuccessfulResponse)
