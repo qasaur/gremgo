@@ -26,16 +26,6 @@ var dummyPartialResponse2 = []byte(`{"result":{"data":[{"id": 4,"label": "person
  "requestId":"1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
  "status":{"code":200,"attributes":{},"message":""}}`)
 
-// func TestResponseGet(t *testing.T) {
-// 	c := Client{}
-// 	c.responses = make(chan []byte, 2)
-// 	c.responses <- dummySuccessfulResponse
-// 	c.responses <- dummyPartialResponse1
-// 	if reflect.DeepEqual(resp, dummySuccessfulResponse) != true {
-// 		t.Fail()
-// 	}
-// }
-
 var dummySuccessfulResponseMarshalled = response{
 	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      200,
@@ -54,6 +44,22 @@ var dummyPartialResponse2Marshalled = response{
 	data:      "testPartialData2",
 }
 
+// func TestResponseHandling(t *testing.T) {
+// 	c := newClient()
+//
+// 	c.handleResponse(dummySuccessfulResponse)
+//
+// 	var expected []interface{}
+// 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
+//
+// 	fmt.Println(expected)
+// 	fmt.Println(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid))
+//
+// 	if reflect.DeepEqual(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid), expected) != true {
+// 		t.Fail()
+// 	}
+// }
+
 func TestResponseMarshalling(t *testing.T) {
 	resp, err := marshalResponse(dummySuccessfulResponse)
 	if err != nil {
@@ -68,19 +74,58 @@ func TestResponseMarshalling(t *testing.T) {
 
 func TestResponseSortingSingleResponse(t *testing.T) {
 	c := newClient()
+
 	c.sortResponse(dummySuccessfulResponseMarshalled)
+
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
+
 	if reflect.DeepEqual(c.results[dummySuccessfulResponseMarshalled.requestid], expected) != true {
 		t.Fail()
 	}
 }
 
-// func TestResponseSortingMultipleResponse(t *testing.T) {
-// 	c := newClient()
-//
-// 	c.sortResponse(dummyPartialResponse1Marshalled)
-// 	c.sortResponse(dummyPartialResponse2Marshalled)
-//
-// 	// if reflect.DeepEqual(x interface{}, y interface{})
-// }
+func TestResponseSortingMultipleResponse(t *testing.T) {
+	c := newClient()
+
+	c.sortResponse(dummyPartialResponse1Marshalled)
+	c.sortResponse(dummyPartialResponse2Marshalled)
+
+	var expected []interface{}
+	expected = append(expected, dummyPartialResponse1Marshalled.data)
+	expected = append(expected, dummyPartialResponse2Marshalled.data)
+
+	if reflect.DeepEqual(c.results[dummyPartialResponse1Marshalled.requestid], expected) != true {
+		t.Fail()
+	}
+}
+
+func TestResponseRetrieval(t *testing.T) {
+	c := newClient()
+
+	c.sortResponse(dummyPartialResponse1Marshalled)
+	c.sortResponse(dummyPartialResponse2Marshalled)
+
+	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestid)
+
+	var expected []interface{}
+	expected = append(expected, dummyPartialResponse1Marshalled.data)
+	expected = append(expected, dummyPartialResponse2Marshalled.data)
+
+	if reflect.DeepEqual(resp, expected) != true {
+		t.Fail()
+	}
+}
+
+func TestResponseDeletion(t *testing.T) {
+	c := newClient()
+
+	c.sortResponse(dummyPartialResponse1Marshalled)
+	c.sortResponse(dummyPartialResponse2Marshalled)
+
+	c.deleteResponse(dummyPartialResponse1Marshalled.requestid)
+
+	if len(c.results[dummyPartialResponse1Marshalled.requestid]) != 0 {
+		t.Fail()
+	}
+}

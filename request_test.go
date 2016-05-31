@@ -40,6 +40,9 @@ func TestRequestPackaging(t *testing.T) {
 	}
 
 	msg, err := packageRequest(testRequest)
+	if err != nil {
+		t.Error(err)
+	}
 
 	j, err := json.Marshal(testRequest)
 	if err != nil {

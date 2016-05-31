@@ -8,10 +8,11 @@ type response struct {
 	code      int
 }
 
-// func (c *Client) getResponse() (msg []byte) {
-// 	msg = <-c.responses
-// 	return
-// }
+func (c *Client) handleResponse(msg []byte) (err error) {
+	resp, err := marshalResponse(msg) // TODO: Fix error management
+	c.sortResponse(resp)
+	return
+}
 
 func marshalResponse(msg []byte) (resp response, err error) {
 	var j map[string]interface{}
@@ -38,16 +39,12 @@ func (c *Client) sortResponse(resp response) {
 	return
 }
 
-// handleResponse classifies the data, sorts the data, and saves it for retrieval
-// func (c *Client) handleResponse(msg []byte) (err error) {
-// 	var r response
-// 	err = json.Unmarshal(msg, &r) // Unwrap message
-// 	if err != nil {
-// 		return
-// 	}
-// 	code := r.Status["code"]
-// 	resp := determineResponse(code)
-// 	resp.process()
-// 	c.saveResponse(resp)
-// 	return
-// }
+func (c *Client) retrieveResponse(id string) (data []interface{}) {
+	data = c.results[id]
+	return
+}
+
+func (c *Client) deleteResponse(id string) {
+	delete(c.results, id)
+	return
+}
