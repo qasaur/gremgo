@@ -45,6 +45,17 @@ func Dial(conn dialer) (c Client, err error) {
 	return
 }
 
+func (c *Client) executeRequest(query string, bindings map[string]string) (resp interface{}, err error) {
+	req, id := prepareRequest(query, bindings)
+	msg, err := packageRequest(req)
+	if err != nil {
+		return // TODO: Fix error handling
+	}
+	c.dispatchRequest(msg)
+	resp = c.retrieveResponse(id)
+	return
+}
+
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
 func (c *Client) Execute(query string, bindings map[string]string) (resp interface{}, err error) {
 	resp, err = c.executeRequest(query, bindings)
@@ -59,16 +70,5 @@ func (c *Client) ExecuteFile(path string, bindings map[string]string) (resp inte
 	}
 	query := string(d)
 	resp, err = c.executeRequest(query, bindings)
-	return
-}
-
-func (c *Client) executeRequest(query string, bindings map[string]string) (resp interface{}, err error) {
-	req, id := prepareRequest(query, bindings)
-	msg, err := packageRequest(req)
-	if err != nil {
-		return // TODO: Fix error handling
-	}
-	c.dispatchRequest(msg)
-	resp = c.retrieveResponse(id)
 	return
 }

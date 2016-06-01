@@ -26,6 +26,7 @@ type request struct {
 
 /////
 
+// prepareRequest packages a query and binding into the format that Gremlin Server accepts
 func prepareRequest(query string, bindings map[string]string) (req request, id string) {
 	id = uuid.NewV4().String()
 
@@ -63,6 +64,7 @@ func packageRequest(req request) (msg []byte, err error) {
 
 /////
 
+// dispactchRequest sends the request for writing to the remote Gremlin Server
 func (c *Client) dispatchRequest(msg []byte) {
 	c.requests <- msg
 }
