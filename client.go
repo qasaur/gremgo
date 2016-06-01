@@ -14,11 +14,16 @@ type Client struct {
 	respMutex *sync.RWMutex
 }
 
+// NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
+func NewDialer(host string) (dialer Ws) {
+	return Ws{host: "127.0.0.1"}
+}
+
 func newClient() (c Client) {
 	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
 	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
 	c.results = make(map[string][]interface{})
-	c.respMutex = &sync.RWMutex{} // c.mutex ensures that thread sorting is safe
+	c.respMutex = &sync.RWMutex{} // c.mutex ensures that sorting is thread safe
 	return
 }
 
@@ -42,7 +47,7 @@ func Dial(conn dialer) (c Client, err error) {
 
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
 func (c *Client) Execute(query string, bindings map[string]string) (resp interface{}, err error) {
-	resp, err = c.evaluateRequest(query, bindings)
+	resp, err = c.executeRequest(query, bindings)
 	return
 }
 
@@ -53,11 +58,11 @@ func (c *Client) ExecuteFile(path string, bindings map[string]string) (resp inte
 		return
 	}
 	query := string(d)
-	resp, err = c.evaluateRequest(query, bindings)
+	resp, err = c.executeRequest(query, bindings)
 	return
 }
 
-func (c *Client) evaluateRequest(query string, bindings map[string]string) (resp interface{}, err error) {
+func (c *Client) executeRequest(query string, bindings map[string]string) (resp interface{}, err error) {
 	req, id := prepareRequest(query, bindings)
 	msg, err := packageRequest(req)
 	if err != nil {

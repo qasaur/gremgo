@@ -1,5 +1,10 @@
 package gremgo
 
+import (
+	"reflect"
+	"testing"
+)
+
 // type dummyConnector struct {
 // 	expected response
 // 	msg      []byte
@@ -31,3 +36,11 @@ package gremgo
 // 		t.Fail()
 // 	}
 // }
+
+func TestNewDialer(t *testing.T) {
+	dialer := NewDialer("127.0.0.1")
+	expected := ws{host: "127.0.0.1"}
+	if reflect.DeepEqual(dialer, expected) != true {
+		t.Fail()
+	}
+}

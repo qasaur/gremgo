@@ -21,13 +21,13 @@ WebSocket Connection
 
 // Ws is the dialer for a WebSocket connection
 type Ws struct {
-	Host string
+	host string
 	conn *websocket.Conn
 }
 
 func (ws *Ws) connect() (err error) {
 	d := websocket.Dialer{}
-	ws.conn, _, err = d.Dial(ws.Host, http.Header{})
+	ws.conn, _, err = d.Dial(ws.host, http.Header{})
 	return
 }
 
