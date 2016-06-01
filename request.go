@@ -6,6 +6,16 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+/////
+
+type requester interface {
+	prepare() error
+	getID() string
+	getRequest() request
+}
+
+/////
+
 // request is a container for all evaluation request parameters to be sent to the Gremlin Server.
 type request struct {
 	Requestid string                 `json:"requestId"`
@@ -14,8 +24,28 @@ type request struct {
 	Args      map[string]interface{} `json:"args"`
 }
 
+/////
+
+// prepareRequest packages a query and binding into the format that Gremlin Server accepts
+func prepareRequest(query string, bindings map[string]string) (req request, id string) {
+	id = uuid.NewV4().String()
+
+	req.Requestid = id
+	req.Op = "eval"
+	req.Processor = ""
+
+	req.Args = make(map[string]interface{})
+	req.Args["language"] = "gremlin-groovy"
+	req.Args["gremlin"] = query
+	req.Args["bindings"] = bindings
+
+	return
+}
+
+/////
+
 // formatMessage takes a request type and formats it into being able to be delivered to Gremlin Server
-func formatRequest(req request) (msg []byte, err error) {
+func packageRequest(req request) (msg []byte, err error) {
 
 	j, err := json.Marshal(req) // Formats request into byte format
 	if err != nil {
@@ -34,47 +64,9 @@ func formatRequest(req request) (msg []byte, err error) {
 
 /////
 
-type requester interface {
-	prepare() error
+// dispactchRequest sends the request for writing to the remote Gremlin Server
+func (c *Client) dispatchRequest(msg []byte) {
+	c.requests <- msg
 }
 
 /////
-
-type evalRequest struct {
-	request
-	query    string
-	bindings map[string]string
-	prepared []byte
-}
-
-func (req *evalRequest) prepare() (err error) {
-	req.request.Requestid = uuid.NewV4().String() // Requestid will be used to identify the specific message and request when retrieving a response
-	req.request.Op = "eval"
-	req.request.Processor = ""
-
-	req.request.Args = make(map[string]interface{})
-
-	req.request.Args["gremlin"] = req.query
-	req.request.Args["language"] = "gremlin-groovy"
-	req.request.Args["bindings"] = req.bindings
-
-	req.prepared, err = formatRequest(req.request)
-
-	return
-}
-
-/////
-
-func (c *Client) sendRequest(msg []byte) {
-	c.requests <- msg // Send query to write worker
-}
-
-/////
-
-func (c *Client) createRequest(req requester) (err error) {
-	err = req.prepare()
-	if err != nil {
-		return
-	}
-	return
-}

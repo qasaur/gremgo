@@ -1,109 +1,53 @@
 package gremgo
 
-import (
-	"encoding/json"
-	"log"
-)
+import "encoding/json"
 
 type response struct {
-	Result    interface{}            `json:"result"`
-	Requestid string                 `json:"requestId"`
-	Status    map[string]interface{} `json:"status"`
+	data      interface{}
+	requestid string
+	code      int
 }
 
-// handleResponse classifies the data and sends it to the appropriate function
 func (c *Client) handleResponse(msg []byte) (err error) {
-	var r response
-	err = json.Unmarshal(msg, &r) // Unwrap message
+	resp, err := marshalResponse(msg)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	code := r.Status["code"]
-	switch {
-	case code == "200":
-		resp := successfulResponse{response: r}
-		c.processResponse(&resp)
-	case code == "204":
-		resp := emptyResponse{response: r}
-		c.processResponse(&resp)
-	case code == "206":
-		resp := partialResponse{response: r}
-		c.processResponse(&resp)
-	default:
-		resp := erroneousResponse{response: r}
-		c.processResponse(&resp)
-	}
+	c.sortResponse(resp)
 	return
 }
 
-func (c *Client) processResponse(resp responseHandler) {
-	data, id, err := resp.process()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// TODO: Fix processing of partial requests
-	c.mutex.Lock()
-	c.responses[id] = data
-	c.mutex.Unlock()
+func marshalResponse(msg []byte) (resp response, err error) {
+	var j map[string]interface{}
+	err = json.Unmarshal(msg, &j)
+
+	status := j["status"].(map[string]interface{})
+	result := j["result"].(map[string]interface{})
+	code := status["code"].(float64)
+
+	resp.code = int(code)
+	resp.data = result["data"]
+	resp.requestid = j["requestId"].(string)
 	return
 }
 
-func (c *Client) retrieveResponse(id string) (data interface{}) {
-	for {
-		c.mutex.Lock()
-		data = c.responses[id]
-		if data != nil {
-			delete(c.responses, id)
-			c.mutex.Unlock()
-			break
-		}
-		c.mutex.Unlock()
-	}
+func (c *Client) sortResponse(resp response) {
+	c.respMutex.RLock()
+	container := c.results[resp.requestid]
+	c.respMutex.RUnlock()
+	data := append(container, resp.data)
+	c.respMutex.Lock()
+	c.results[resp.requestid] = data
+	c.respMutex.Unlock()
 	return
 }
 
-/////
-
-type responseHandler interface {
-	process() (interface{}, string, error)
+func (c *Client) retrieveResponse(id string) (data []interface{}) {
+	data = c.results[id]
+	return
 }
 
-/////
-
-type successfulResponse struct {
-	response
-}
-
-func (res *successfulResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-/////
-
-type emptyResponse struct {
-	response
-}
-
-func (res *emptyResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-/////
-
-type partialResponse struct {
-	response
-}
-
-func (res *partialResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
-}
-
-/////
-
-type erroneousResponse struct {
-	response
-}
-
-func (res *erroneousResponse) process() (data interface{}, id string, err error) {
-	return res.Result, res.Requestid, nil
+func (c *Client) deleteResponse(id string) {
+	delete(c.results, id)
+	return
 }
