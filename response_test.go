@@ -34,7 +34,7 @@ var dummySuccessfulResponseMarshalled = response{
 
 var dummyPartialResponse1Marshalled = response{
 	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      206,
+	code:      206, // Code 206 indicates that the response is not the terminating response in a sequence of responses
 	data:      "testPartialData1",
 }
 
@@ -44,6 +44,7 @@ var dummyPartialResponse2Marshalled = response{
 	data:      "testPartialData2",
 }
 
+// TestResponseHandling tests the overall response handling mechanism of gremgo
 func TestResponseHandling(t *testing.T) {
 	c := newClient()
 
@@ -57,6 +58,7 @@ func TestResponseHandling(t *testing.T) {
 	}
 }
 
+// TestResponseMarshalling tests the ability to marshal a response into a designated response struct for further manipulation
 func TestResponseMarshalling(t *testing.T) {
 	resp, err := marshalResponse(dummySuccessfulResponse)
 	if err != nil {
@@ -69,6 +71,7 @@ func TestResponseMarshalling(t *testing.T) {
 	}
 }
 
+// TestResponseSortingSingleResponse tests the ability for sortResponse to save a response received from Gremlin Server
 func TestResponseSortingSingleResponse(t *testing.T) {
 	c := newClient()
 
@@ -82,6 +85,7 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 	}
 }
 
+// TestResponseSortingMultipleResponse tests the ability for the sortResponse function to categorize and group responses that are sent in a stream
 func TestResponseSortingMultipleResponse(t *testing.T) {
 	c := newClient()
 
@@ -97,6 +101,7 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 	}
 }
 
+// TestResponseRetrieval tests the ability for a requester to retrieve the response for a specified requestid generated when sending the request
 func TestResponseRetrieval(t *testing.T) {
 	c := newClient()
 
@@ -114,6 +119,7 @@ func TestResponseRetrieval(t *testing.T) {
 	}
 }
 
+// TestResponseDeletion tests the ability for a requester to clean up after retrieving a response after delivery to a client
 func TestResponseDeletion(t *testing.T) {
 	c := newClient()
 

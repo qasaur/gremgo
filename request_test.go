@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestRequestPreparation tests the ability to package a query and a set of bindings into a request struct for further manipulation
 func TestRequestPreparation(t *testing.T) {
 	query := "g.V(x)"
 	bindings := map[string]string{"x": "10"}
@@ -27,6 +28,7 @@ func TestRequestPreparation(t *testing.T) {
 	}
 }
 
+// TestRequestPackaging tests the ability for gremgo to format a request using the established Gremlin Server WebSockets protocol for delivery to the server
 func TestRequestPackaging(t *testing.T) {
 	testRequest := request{
 		Requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
@@ -63,6 +65,7 @@ func TestRequestPackaging(t *testing.T) {
 	}
 }
 
+// TestRequestDispatch tests the ability for a requester to send a request to the client for writing to Gremlin Server
 func TestRequestDispatch(t *testing.T) {
 	testRequest := request{
 		Requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
@@ -80,7 +83,7 @@ func TestRequestDispatch(t *testing.T) {
 		t.Error(err)
 	}
 	c.dispatchRequest(msg)
-	req := <-c.requests
+	req := <-c.requests // c.requests is the channel where all requests are sent for writing to Gremlin Server, write workers listen on this channel
 	if reflect.DeepEqual(msg, req) != true {
 		t.Fail()
 	}
