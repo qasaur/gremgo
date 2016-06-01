@@ -39,7 +39,7 @@ import (
 
 func TestNewDialer(t *testing.T) {
 	dialer := NewDialer("127.0.0.1")
-	expected := ws{host: "127.0.0.1"}
+	expected := Ws{host: "127.0.0.1"}
 	if reflect.DeepEqual(dialer, expected) != true {
 		t.Fail()
 	}
