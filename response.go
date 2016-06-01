@@ -9,7 +9,10 @@ type response struct {
 }
 
 func (c *Client) handleResponse(msg []byte) (err error) {
-	resp, err := marshalResponse(msg) // TODO: Fix error management
+	resp, err := marshalResponse(msg)
+	if err != nil {
+		return
+	}
 	c.sortResponse(resp)
 	return
 }
