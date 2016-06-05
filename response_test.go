@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+/*
+Dummy responses for mocking
+*/
+
 var dummySuccessfulResponse = []byte(`{"result":{"data":[{"id": 2,"label": "person","type": "vertex","properties": [
   {"id": 2, "value": "vadas", "label": "name"},
   {"id": 3, "value": 27, "label": "age"}]}
@@ -34,7 +38,7 @@ var dummySuccessfulResponseMarshalled = response{
 
 var dummyPartialResponse1Marshalled = response{
 	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      206,
+	code:      206, // Code 206 indicates that the response is not the terminating response in a sequence of responses
 	data:      "testPartialData1",
 }
 
@@ -44,6 +48,7 @@ var dummyPartialResponse2Marshalled = response{
 	data:      "testPartialData2",
 }
 
+// TestResponseHandling tests the overall response handling mechanism of gremgo
 func TestResponseHandling(t *testing.T) {
 	c := newClient()
 
@@ -57,6 +62,7 @@ func TestResponseHandling(t *testing.T) {
 	}
 }
 
+// TestResponseMarshalling tests the ability to marshal a response into a designated response struct for further manipulation
 func TestResponseMarshalling(t *testing.T) {
 	resp, err := marshalResponse(dummySuccessfulResponse)
 	if err != nil {
@@ -69,10 +75,12 @@ func TestResponseMarshalling(t *testing.T) {
 	}
 }
 
+// TestResponseSortingSingleResponse tests the ability for sortResponse to save a response received from Gremlin Server
 func TestResponseSortingSingleResponse(t *testing.T) {
+
 	c := newClient()
 
-	c.sortResponse(dummySuccessfulResponseMarshalled)
+	c.saveResponse(dummySuccessfulResponseMarshalled)
 
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
@@ -82,11 +90,13 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 	}
 }
 
+// TestResponseSortingMultipleResponse tests the ability for the sortResponse function to categorize and group responses that are sent in a stream
 func TestResponseSortingMultipleResponse(t *testing.T) {
+
 	c := newClient()
 
-	c.sortResponse(dummyPartialResponse1Marshalled)
-	c.sortResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled)
+	c.saveResponse(dummyPartialResponse2Marshalled)
 
 	var expected []interface{}
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
@@ -97,11 +107,12 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 	}
 }
 
+// TestResponseRetrieval tests the ability for a requester to retrieve the response for a specified requestid generated when sending the request
 func TestResponseRetrieval(t *testing.T) {
 	c := newClient()
 
-	c.sortResponse(dummyPartialResponse1Marshalled)
-	c.sortResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled)
+	c.saveResponse(dummyPartialResponse2Marshalled)
 
 	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestid)
 
@@ -114,15 +125,58 @@ func TestResponseRetrieval(t *testing.T) {
 	}
 }
 
+// TestResponseDeletion tests the ability for a requester to clean up after retrieving a response after delivery to a client
 func TestResponseDeletion(t *testing.T) {
 	c := newClient()
 
-	c.sortResponse(dummyPartialResponse1Marshalled)
-	c.sortResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled)
+	c.saveResponse(dummyPartialResponse2Marshalled)
 
 	c.deleteResponse(dummyPartialResponse1Marshalled.requestid)
 
 	if len(c.results[dummyPartialResponse1Marshalled.requestid]) != 0 {
 		t.Fail()
+	}
+}
+
+var codes = []struct {
+	code int
+}{
+	{200},
+	{204},
+	{206},
+	{401},
+	{407},
+	{498},
+	{499},
+	{500},
+	{597},
+	{598},
+	{599},
+	{3434}, // Testing unknown error code
+}
+
+// Tests detection of errors and if an error is generated for a specific error code
+func TestResponseErrorDetection(t *testing.T) {
+	for _, co := range codes {
+		err := responseDetectError(co.code)
+		switch {
+		case co.code == 200:
+			if err != nil {
+				t.Log("Successful response returned error.")
+			}
+		case co.code == 204:
+			if err != nil {
+				t.Log("Successful response returned error.")
+			}
+		case co.code == 206:
+			if err != nil {
+				t.Log("Successful response returned error.")
+			}
+		default:
+			if err == nil {
+				t.Log("Unsuccessful response did not return error.")
+			}
+		}
 	}
 }
