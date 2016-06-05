@@ -48,7 +48,7 @@ func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches m
 		select {
 		case msg := <-c.requests: // Wait for message send request
 			err := c.conn.write(msg) // Write message
-			if err != nil {
+			if err != nil {          // TODO: Fix error handling here
 				log.Fatal(err)
 			}
 		default:
