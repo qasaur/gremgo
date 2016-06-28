@@ -7,11 +7,12 @@ import (
 
 // Client is a container for the gremgo client.
 type Client struct {
-	conn      dialer
-	requests  chan []byte
-	responses chan []byte
-	results   map[string][]interface{}
-	respMutex *sync.RWMutex
+	conn             dialer
+	requests         chan []byte
+	responses        chan []byte
+	results          map[string][]interface{}
+	responseNotifyer map[string]int // responseNotifyer notifies the requester that a response has arrived for the request
+	respMutex        *sync.RWMutex
 }
 
 // NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
@@ -25,6 +26,7 @@ func newClient() (c Client) {
 	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
 	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
 	c.results = make(map[string][]interface{})
+	c.responseNotifyer = make(map[string]int)
 	c.respMutex = &sync.RWMutex{} // c.mutex ensures that sorting is thread safe
 	return
 }
