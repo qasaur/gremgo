@@ -39,6 +39,7 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	} else {
 		resp.data = result["data"]
 	}
+	err = nil
 	resp.requestid = j["requestId"].(string)
 	return
 }
@@ -51,12 +52,22 @@ func (c *Client) saveResponse(resp response) {
 	newdata := append(container, resp.data) // Create new data container with new data
 	c.respMutex.Lock()                      // Lock for writing
 	c.results[resp.requestid] = newdata     // Add new data to buffer for future retrieval
-	c.respMutex.Unlock()                    // Unlock for writing
+	c.responseNotifyer[resp.requestid] = 1
+	c.respMutex.Unlock() // Unlock for writing
 	return
 }
 
-// retrieveResponse retrieves the response saved by sortResponse
+// retrieveResponse retrieves the response saved by saveResponse.
 func (c *Client) retrieveResponse(id string) (data []interface{}) {
+	var recieved bool
+	recieved = false
+	for recieved == false {
+		c.respMutex.RLock()
+		if c.responseNotifyer[id] != 0 {
+			recieved = true
+		}
+		c.respMutex.RUnlock()
+	}
 	data = c.results[id]
 	return
 }

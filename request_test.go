@@ -28,6 +28,25 @@ func TestRequestPreparation(t *testing.T) {
 	}
 }
 
+func TestRequestPreparationNilBindings(t *testing.T) {
+	query := "g.V(x)"
+	req, id := prepareRequest(query, nil)
+
+	expectedRequest := request{
+		Requestid: id,
+		Op:        "eval",
+		Processor: "",
+		Args: map[string]interface{}{
+			"gremlin":  "g.V(x)",
+			"language": "gremlin-groovy",
+		},
+	}
+
+	if reflect.DeepEqual(req, expectedRequest) != true {
+		t.Fail()
+	}
+}
+
 // TestRequestPackaging tests the ability for gremgo to format a request using the established Gremlin Server WebSockets protocol for delivery to the server
 func TestRequestPackaging(t *testing.T) {
 	testRequest := request{
