@@ -15,8 +15,10 @@ type Client struct {
 }
 
 // NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
-func NewDialer(host string) (dialer Ws) {
-	return Ws{host: "127.0.0.1"}
+func NewDialer(host string) (dialer *Ws) {
+	dialer = new(Ws)
+	dialer.host = "ws://" + host
+	return dialer
 }
 
 func newClient() (c Client) {
