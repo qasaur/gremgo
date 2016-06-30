@@ -26,7 +26,10 @@ type Ws struct {
 }
 
 func (ws *Ws) connect() (err error) {
-	d := websocket.Dialer{}
+	d := websocket.Dialer{
+		WriteBufferSize: 8192,
+		ReadBufferSize:  8192,
+	}
 	ws.conn, _, err = d.Dial(ws.host, http.Header{})
 	return
 }
