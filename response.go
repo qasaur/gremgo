@@ -51,6 +51,9 @@ func (c *Client) saveResponse(resp response) {
 	newdata := append(container, resp.data) // Create new data container with new data
 	c.results[resp.requestid] = newdata     // Add new data to buffer for future retrieval
 	if resp.code == 200 {
+		if c.responseNotifyer[resp.requestid] == nil {
+			c.responseNotifyer[resp.requestid] = make(chan int, 1)
+		}
 		c.responseNotifyer[resp.requestid] <- 1
 	}
 	c.respMutex.Unlock()
@@ -62,6 +65,8 @@ func (c *Client) retrieveResponse(id string) (data []interface{}) {
 	n := <-c.responseNotifyer[id]
 	if n == 1 {
 		data = c.results[id]
+		close(c.responseNotifyer[id])
+		delete(c.responseNotifyer, id)
 		c.deleteResponse(id)
 	}
 	return
