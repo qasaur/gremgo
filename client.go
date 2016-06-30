@@ -11,8 +11,8 @@ type Client struct {
 	requests         chan []byte
 	responses        chan []byte
 	results          map[string][]interface{}
-	responseNotifyer map[string]int // responseNotifyer notifies the requester that a response has arrived for the request
-	respMutex        *sync.RWMutex
+	responseNotifyer map[string]chan int // responseNotifyer notifies the requester that a response has arrived for the request
+	respMutex        *sync.Mutex
 }
 
 // NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
@@ -26,8 +26,8 @@ func newClient() (c Client) {
 	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
 	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
 	c.results = make(map[string][]interface{})
-	c.responseNotifyer = make(map[string]int)
-	c.respMutex = &sync.RWMutex{} // c.mutex ensures that sorting is thread safe
+	c.responseNotifyer = make(map[string]chan int)
+	c.respMutex = &sync.Mutex{} // c.mutex ensures that sorting is thread safe
 	return
 }
 
@@ -55,6 +55,7 @@ func (c *Client) executeRequest(query string, bindings map[string]string) (resp 
 	if err != nil {
 		return // TODO: Fix error handling
 	}
+	c.responseNotifyer[id] = make(chan int, 1)
 	c.dispatchRequest(msg)
 	resp = c.retrieveResponse(id)
 	return

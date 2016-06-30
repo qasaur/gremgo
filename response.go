@@ -46,29 +46,24 @@ func marshalResponse(msg []byte) (resp response, err error) {
 
 // saveResponse makes the response available for retrieval by the requester. Mutexes are used for thread safety.
 func (c *Client) saveResponse(resp response) {
-	c.respMutex.RLock()                     // Lock for reading
+	c.respMutex.Lock()
 	container := c.results[resp.requestid]  // Retrieve old data container (for requests with multiple responses)
-	c.respMutex.RUnlock()                   // Unlock for reading
 	newdata := append(container, resp.data) // Create new data container with new data
-	c.respMutex.Lock()                      // Lock for writing
 	c.results[resp.requestid] = newdata     // Add new data to buffer for future retrieval
-	c.responseNotifyer[resp.requestid] = 1
-	c.respMutex.Unlock() // Unlock for writing
+	if resp.code == 200 {
+		c.responseNotifyer[resp.requestid] <- 1
+	}
+	c.respMutex.Unlock()
 	return
 }
 
 // retrieveResponse retrieves the response saved by saveResponse.
 func (c *Client) retrieveResponse(id string) (data []interface{}) {
-	var recieved bool
-	recieved = false
-	for recieved == false {
-		c.respMutex.RLock()
-		if c.responseNotifyer[id] != 0 {
-			recieved = true
-		}
-		c.respMutex.RUnlock()
+	n := <-c.responseNotifyer[id]
+	if n == 1 {
+		data = c.results[id]
+		c.deleteResponse(id)
 	}
-	data = c.results[id]
 	return
 }
 

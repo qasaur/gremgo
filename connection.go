@@ -63,7 +63,8 @@ func (c *Client) readWorker() { // readWorker works on a loop and sorts messages
 			log.Fatal(err)
 		}
 		if msg != nil {
-			go c.handleResponse(msg) // Send message for sorting and retrieval on a separate thread
+			// TODO: Make this multithreaded
+			c.handleResponse(msg) // Send message for sorting and retrieval on a separate thread
 		}
 	}
 }
