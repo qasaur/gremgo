@@ -50,7 +50,7 @@ func (c *Client) saveResponse(resp response) {
 	container := c.results[resp.requestid]  // Retrieve old data container (for requests with multiple responses)
 	newdata := append(container, resp.data) // Create new data container with new data
 	c.results[resp.requestid] = newdata     // Add new data to buffer for future retrieval
-	if resp.code == 200 {
+	if resp.code == 200 || resp.code == 204 {
 		if c.responseNotifyer[resp.requestid] == nil {
 			c.responseNotifyer[resp.requestid] = make(chan int, 1)
 		}
