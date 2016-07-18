@@ -2,8 +2,8 @@ package gremgo
 
 import (
 	"encoding/json"
-
-	"github.com/satori/go.uuid"
+	"strconv"
+	"sync"
 )
 
 /////
@@ -26,9 +26,23 @@ type request struct {
 
 /////
 
+type UidGenerator struct {
+	uid int
+	mu  sync.Mutex
+}
+
+func (u *UidGenerator) Next() int {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.uid++
+	return u.uid
+}
+
+var uidGen = &UidGenerator{}
+
 // prepareRequest packages a query and binding into the format that Gremlin Server accepts
 func prepareRequest(query string, bindings map[string]string) (req request, id string) {
-	id = uuid.NewV4().String()
+	id = strconv.Itoa(uidGen.Next())
 
 	req.Requestid = id
 	req.Op = "eval"
