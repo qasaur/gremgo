@@ -11,6 +11,7 @@ type dialer interface {
 	connect() error
 	write([]byte) error
 	read() ([]byte, error)
+	close()
 }
 
 /////
@@ -42,6 +43,10 @@ func (ws *Ws) write(msg []byte) (err error) {
 func (ws *Ws) read() (msg []byte, err error) {
 	_, msg, err = ws.conn.ReadMessage()
 	return
+}
+
+func (ws *Ws) close() {
+	ws.close()
 }
 
 /////
