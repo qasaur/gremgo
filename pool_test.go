@@ -18,13 +18,13 @@ func TestPurge(t *testing.T) {
 	p := &Pool{IdleTimeout: time.Second * 30, idle: []*idleConnection{invalid, valid}}
 
 	if len(p.idle) != 2 {
-		t.Error("Expected 2 idle connections")
+		t.Errorf("Expected 2 idle connections, got %d", len(p.idle))
 	}
 
 	p.purge()
 
 	if len(p.idle) != 1 {
-		t.Error("Expected 1 idle connection after purge")
+		t.Errorf("Expected 1 idle connection after purge, got %d", len(p.idle))
 	}
 
 	if p.idle[0].t != valid.t {
@@ -115,7 +115,7 @@ func TestGetAndDial(t *testing.T) {
 	}
 
 	if len(pool.idle) != 0 {
-		t.Error("Expected 0 idle connections, should have purged expired connection")
+		t.Errorf("Expected 0 idle connections, got %d", len(pool.idle))
 	}
 
 	if conn.c != client {
@@ -123,7 +123,7 @@ func TestGetAndDial(t *testing.T) {
 	}
 
 	if pool.active != 1 {
-		t.Error("Expected 1 active connection")
+		t.Errorf("Expected 1 active connection, got %d", pool.active)
 	}
 
 	// Close the connection and ensure it was returned to the idle pool
@@ -134,7 +134,7 @@ func TestGetAndDial(t *testing.T) {
 	}
 
 	if pool.active != 0 {
-		t.Error("Expected 0 active connections")
+		t.Errorf("Expected 0 active connections, got %d", pool.active)
 	}
 
 	// Get a new connection and ensure that it is the now idling connection
@@ -149,6 +149,6 @@ func TestGetAndDial(t *testing.T) {
 	}
 
 	if pool.active != 1 {
-		t.Error("Expected 1 active connection")
+		t.Errorf("Expected 1 active connection, got %d", pool.active)
 	}
 }
