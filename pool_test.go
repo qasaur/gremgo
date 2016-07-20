@@ -9,9 +9,9 @@ func TestPurge(t *testing.T) {
 	n := time.Now()
 
 	// invalid has timedout and should be cleaned up
-	invalid := &idleConnection{t: n.Add(-30 * time.Second)}
+	invalid := &idleConnection{t: n.Add(-30 * time.Second), pc: &PooledConnection{Client: &Client{}}}
 	// valid has not yet timed out and should remain in the idle pool
-	valid := &idleConnection{t: n.Add(30 * time.Second)}
+	valid := &idleConnection{t: n.Add(30 * time.Second), pc: &PooledConnection{Client: &Client{}}}
 
 	// Pool has a 30 second timeout and an idle connection slice containing both
 	// the invalid and valid idle connections
@@ -33,9 +33,42 @@ func TestPurge(t *testing.T) {
 
 }
 
+func TestPurgeErrorClosedConnection(t *testing.T) {
+	n := time.Now()
+
+	p := &Pool{IdleTimeout: time.Second * 30}
+
+	valid := &idleConnection{t: n.Add(30 * time.Second), pc: &PooledConnection{Client: &Client{}}}
+
+	client := &Client{}
+
+	closed := &idleConnection{t: n.Add(30 * time.Second), pc: &PooledConnection{Pool: p, Client: client}}
+
+	idle := []*idleConnection{valid, closed}
+
+	p.idle = idle
+
+	// Simulate error
+	closed.pc.Client.Errored = true
+
+	if len(p.idle) != 2 {
+		t.Errorf("Expected 2 idle connections, got %d", len(p.idle))
+	}
+
+	p.purge()
+
+	if len(p.idle) != 1 {
+		t.Errorf("Expected 1 idle connection after purge, got %d", len(p.idle))
+	}
+
+	if p.idle[0] != valid {
+		t.Error("Expected valid connection to remain in pool")
+	}
+}
+
 func TestPooledConnectionClose(t *testing.T) {
 	pool := &Pool{}
-	pc := &PooledConnection{p: pool}
+	pc := &PooledConnection{Pool: pool}
 
 	if len(pool.idle) != 0 {
 		t.Errorf("Expected 0 idle connection, got %d", len(pool.idle))
@@ -62,9 +95,9 @@ func TestFirst(t *testing.T) {
 	n := time.Now()
 	pool := &Pool{MaxActive: 1, IdleTimeout: 30 * time.Second}
 	idled := []*idleConnection{
-		&idleConnection{pc: &PooledConnection{p: pool}, t: n.Add(-45 * time.Second)}, // expired
-		&idleConnection{pc: &PooledConnection{p: pool}, t: n.Add(-45 * time.Second)}, // expired
-		&idleConnection{pc: &PooledConnection{p: pool}, t: n},                        // valid
+		&idleConnection{t: n.Add(-45 * time.Second), pc: &PooledConnection{Pool: pool, Client: &Client{}}}, // expired
+		&idleConnection{t: n.Add(-45 * time.Second), pc: &PooledConnection{Pool: pool, Client: &Client{}}}, // expired
+		&idleConnection{pc: &PooledConnection{Pool: pool, Client: &Client{}}},                              // valid
 	}
 	pool.idle = idled
 
@@ -91,9 +124,13 @@ func TestFirst(t *testing.T) {
 
 func TestGetAndDial(t *testing.T) {
 	n := time.Now()
-	invalid := &idleConnection{t: n.Add(-30 * time.Second)}
 
-	pool := &Pool{IdleTimeout: time.Second * 30, idle: []*idleConnection{invalid}}
+	pool := &Pool{IdleTimeout: time.Second * 30}
+
+	invalid := &idleConnection{t: n.Add(-30 * time.Second), pc: &PooledConnection{Pool: pool, Client: &Client{}}}
+
+	idle := []*idleConnection{invalid}
+	pool.idle = idle
 
 	client := &Client{}
 	pool.Dial = func() (*Client, error) {
@@ -118,7 +155,7 @@ func TestGetAndDial(t *testing.T) {
 		t.Errorf("Expected 0 idle connections, got %d", len(pool.idle))
 	}
 
-	if conn.c != client {
+	if conn.Client != client {
 		t.Error("Expected correct client to be returned")
 	}
 
@@ -144,7 +181,7 @@ func TestGetAndDial(t *testing.T) {
 		t.Error(err)
 	}
 
-	if conn.c != client {
+	if conn.Client != client {
 		t.Error("Expected the same connection to be reused")
 	}
 

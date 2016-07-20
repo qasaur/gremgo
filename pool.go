@@ -18,8 +18,8 @@ type Pool struct {
 
 // PooledConnection represents a shared and reusable connection.
 type PooledConnection struct {
-	p *Pool
-	c *Client
+	Pool   *Pool
+	Client *Client
 }
 
 type idleConnection struct {
@@ -47,7 +47,7 @@ func (p *Pool) Get() (*PooledConnection, error) {
 			p.idle = append(p.idle[:0], p.idle[1:]...)
 			p.active++
 			p.mu.Unlock()
-			pc := &PooledConnection{p: p, c: conn.pc.c}
+			pc := &PooledConnection{Pool: p, Client: conn.pc.Client}
 			return pc, nil
 
 		}
@@ -69,7 +69,7 @@ func (p *Pool) Get() (*PooledConnection, error) {
 				return nil, err
 			}
 
-			pc := &PooledConnection{p: p, c: dc}
+			pc := &PooledConnection{Pool: p, Client: dc}
 			return pc, nil
 		}
 
@@ -98,8 +98,16 @@ func (p *Pool) purge() {
 		var valid []*idleConnection
 		now := time.Now()
 		for _, v := range p.idle {
+			// If the client has an error then exclude it from the pool
+			if v.pc.Client.Errored {
+				continue
+			}
+
 			if v.t.Add(timeout).After(now) {
 				valid = append(valid, v)
+			} else {
+				// Force underlying connection closed
+				v.pc.Client.Close()
 			}
 		}
 		p.idle = valid
@@ -126,10 +134,9 @@ func (p *Pool) first() *idleConnection {
 // Close signals that the caller is finished with the connection and should be
 // returned to the pool for future use.
 func (pc *PooledConnection) Close() {
-	pc.p.mu.Lock()
-	defer pc.p.mu.Unlock()
+	pc.Pool.mu.Lock()
+	defer pc.Pool.mu.Unlock()
 
-	pc.p.put(pc)
-	pc.p.release()
-
+	pc.Pool.put(pc)
+	pc.Pool.release()
 }
