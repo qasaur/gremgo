@@ -46,7 +46,7 @@ func (ws *Ws) read() (msg []byte, err error) {
 }
 
 func (ws *Ws) close() {
-	ws.close()
+	ws.conn.Close()
 }
 
 /////
@@ -54,13 +54,13 @@ func (ws *Ws) close() {
 func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches messages as soon as it recieves them
 	for {
 		select {
-		case msg := <-c.requests: // Wait for message send request
-			err := c.conn.write(msg) // Write message
-			if err != nil {          // TODO: Fix error handling here
-				// log.Fatal(err)
+		case msg := <-c.requests:
+			err := c.conn.write(msg)
+			if err != nil {
 				log.Println(err)
+				c.Errored = true
+				break
 			}
-		default:
 		}
 	}
 }
@@ -69,12 +69,12 @@ func (c *Client) readWorker() { // readWorker works on a loop and sorts messages
 	for {
 		msg, err := c.conn.read()
 		if err != nil {
-			// log.Fatal(err)
 			log.Println(err)
+			c.Errored = true
+			break
 		}
 		if msg != nil {
-			// TODO: Make this multithreaded
-			c.handleResponse(msg) // Send message for sorting and retrieval on a separate thread
+			c.handleResponse(msg)
 		}
 	}
 }
