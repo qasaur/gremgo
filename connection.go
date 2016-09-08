@@ -54,7 +54,6 @@ func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches m
 			if err != nil {          // TODO: Fix error handling here
 				log.Fatal(err)
 			}
-		default:
 		}
 	}
 }
