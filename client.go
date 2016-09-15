@@ -2,6 +2,7 @@ package gremgo
 
 import (
 	"io/ioutil"
+	"log"
 	"sync"
 )
 
@@ -13,6 +14,7 @@ type Client struct {
 	results          map[string][]interface{}
 	responseNotifyer map[string]chan int // responseNotifyer notifies the requester that a response has arrived for the request
 	respMutex        *sync.Mutex
+	Errored          bool
 }
 
 // NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
@@ -53,7 +55,8 @@ func (c *Client) executeRequest(query string, bindings map[string]string) (resp 
 	req, id := prepareRequest(query, bindings)
 	msg, err := packageRequest(req)
 	if err != nil {
-		return // TODO: Fix error handling
+		log.Println(err)
+		return
 	}
 	c.responseNotifyer[id] = make(chan int, 1)
 	c.dispatchRequest(msg)
@@ -71,9 +74,17 @@ func (c *Client) Execute(query string, bindings map[string]string) (resp interfa
 func (c *Client) ExecuteFile(path string, bindings map[string]string) (resp interface{}, err error) {
 	d, err := ioutil.ReadFile(path) // Read script from file
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	query := string(d)
 	resp, err = c.executeRequest(query, bindings)
 	return
+}
+
+// Close closes the underlying connection and marks the client as closed.
+func (c *Client) Close() {
+	if c.conn != nil {
+		c.conn.close()
+	}
 }
