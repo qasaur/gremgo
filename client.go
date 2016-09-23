@@ -49,8 +49,8 @@ func Dial(conn dialer) (c Client, err error) {
 	return
 }
 
-func (c *Client) executeRequest(query string, bindings map[string]string) (resp interface{}, err error) {
-	req, id := prepareRequest(query, bindings)
+func (c *Client) executeRequest(query string, bindings, rebindings map[string]string) (resp interface{}, err error) {
+	req, id := prepareRequest(query, bindings, rebindings)
 	msg, err := packageRequest(req)
 	if err != nil {
 		return // TODO: Fix error handling
@@ -62,18 +62,18 @@ func (c *Client) executeRequest(query string, bindings map[string]string) (resp 
 }
 
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
-func (c *Client) Execute(query string, bindings map[string]string) (resp interface{}, err error) {
-	resp, err = c.executeRequest(query, bindings)
+func (c *Client) Execute(query string, bindings, rebindings map[string]string) (resp interface{}, err error) {
+	resp, err = c.executeRequest(query, bindings, rebindings)
 	return
 }
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
-func (c *Client) ExecuteFile(path string, bindings map[string]string) (resp interface{}, err error) {
+func (c *Client) ExecuteFile(path string, bindings, rebindings map[string]string) (resp interface{}, err error) {
 	d, err := ioutil.ReadFile(path) // Read script from file
 	if err != nil {
 		return
 	}
 	query := string(d)
-	resp, err = c.executeRequest(query, bindings)
+	resp, err = c.executeRequest(query, bindings, rebindings)
 	return
 }
