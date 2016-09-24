@@ -10,7 +10,8 @@ import (
 func TestRequestPreparation(t *testing.T) {
 	query := "g.V(x)"
 	bindings := map[string]string{"x": "10"}
-	req, id := prepareRequest(query, bindings)
+	rebindings := map[string]string{}
+	req, id := prepareRequest(query, bindings, rebindings)
 
 	expectedRequest := request{
 		Requestid: id,
