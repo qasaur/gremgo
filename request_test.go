@@ -18,9 +18,10 @@ func TestRequestPreparation(t *testing.T) {
 		Op:        "eval",
 		Processor: "",
 		Args: map[string]interface{}{
-			"gremlin":  "g.V(x)",
-			"bindings": map[string]string{"x": "10"},
-			"language": "gremlin-groovy",
+			"gremlin":    query,
+			"bindings":   bindings,
+			"language":   "gremlin-groovy",
+			"rebindings": rebindings,
 		},
 	}
 
