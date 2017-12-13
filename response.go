@@ -55,10 +55,8 @@ func (c *Client) saveResponse(resp response) {
 	newdata := append(container, resp.data)  // Create new data container with new data
 	c.results.Store(resp.requestid, newdata) // Add new data to buffer for future retrieval
 	if resp.code == 200 || resp.code == 204 {
-		respNofifier, loaded := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
-		if loaded {
-			respNofifier.(chan int) <- 1
-		}
+		respNofifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+		respNofifier.(chan int) <- 1
 	}
 	c.respMutex.Unlock()
 	return

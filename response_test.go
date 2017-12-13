@@ -85,7 +85,8 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
 
-	if reflect.DeepEqual(c.results[dummySuccessfulResponseMarshalled.requestid], expected) != true {
+	result, _ := c.results.Load(dummySuccessfulResponseMarshalled.requestid)
+	if reflect.DeepEqual(result.([]interface{}), expected) != true {
 		t.Fail()
 	}
 }
@@ -102,7 +103,8 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
 	expected = append(expected, dummyPartialResponse2Marshalled.data)
 
-	if reflect.DeepEqual(c.results[dummyPartialResponse1Marshalled.requestid], expected) != true {
+	results, _ := c.results.Load(dummyPartialResponse1Marshalled.requestid)
+	if reflect.DeepEqual(results.([]interface{}), expected) != true {
 		t.Fail()
 	}
 }
@@ -134,7 +136,7 @@ func TestResponseDeletion(t *testing.T) {
 
 	c.deleteResponse(dummyPartialResponse1Marshalled.requestid)
 
-	if len(c.results[dummyPartialResponse1Marshalled.requestid]) != 0 {
+	if _, ok := c.results.Load(dummyPartialResponse1Marshalled.requestid); ok {
 		t.Fail()
 	}
 }
