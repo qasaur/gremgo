@@ -47,14 +47,16 @@ func marshalResponse(msg []byte) (resp response, err error) {
 // saveResponse makes the response available for retrieval by the requester. Mutexes are used for thread safety.
 func (c *Client) saveResponse(resp response) {
 	c.respMutex.Lock()
-	container := c.results[resp.requestid]  // Retrieve old data container (for requests with multiple responses)
-	newdata := append(container, resp.data) // Create new data container with new data
-	c.results[resp.requestid] = newdata     // Add new data to buffer for future retrieval
+	var container []interface{}
+	existingData, ok := c.results.Load(resp.requestid) // Retrieve old data container (for requests with multiple responses)
+	if ok {
+		container = existingData.([]interface{})
+	}
+	newdata := append(container, resp.data)  // Create new data container with new data
+	c.results.Store(resp.requestid, newdata) // Add new data to buffer for future retrieval
 	if resp.code == 200 || resp.code == 204 {
-		if c.responseNotifyer[resp.requestid] == nil {
-			c.responseNotifyer[resp.requestid] = make(chan int, 1)
-		}
-		c.responseNotifyer[resp.requestid] <- 1
+		respNofifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+		respNofifier.(chan int) <- 1
 	}
 	c.respMutex.Unlock()
 	return
@@ -62,19 +64,22 @@ func (c *Client) saveResponse(resp response) {
 
 // retrieveResponse retrieves the response saved by saveResponse.
 func (c *Client) retrieveResponse(id string) (data []interface{}) {
-	n := <-c.responseNotifyer[id]
+	resp, _ := c.responseNotifyer.Load(id)
+	n := <-resp.(chan int)
 	if n == 1 {
-		data = c.results[id]
-		close(c.responseNotifyer[id])
-		delete(c.responseNotifyer, id)
-		c.deleteResponse(id)
+		if dataI, ok := c.results.Load(id); ok {
+			data = dataI.([]interface{})
+			close(resp.(chan int))
+			c.responseNotifyer.Delete(id)
+			c.deleteResponse(id)
+		}
 	}
 	return
 }
 
 // deleteRespones deletes the response from the container. Used for cleanup purposes by requester.
 func (c *Client) deleteResponse(id string) {
-	delete(c.results, id)
+	c.results.Delete(id)
 	return
 }
 

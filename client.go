@@ -11,8 +11,8 @@ type Client struct {
 	conn             dialer
 	requests         chan []byte
 	responses        chan []byte
-	results          map[string][]interface{}
-	responseNotifyer map[string]chan int // responseNotifyer notifies the requester that a response has arrived for the request
+	results          *sync.Map
+	responseNotifyer *sync.Map // responseNotifyer notifies the requester that a response has arrived for the request
 	respMutex        *sync.Mutex
 	Errored          bool
 }
@@ -27,8 +27,8 @@ func NewDialer(host string) (dialer *Ws) {
 func newClient() (c Client) {
 	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
 	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
-	c.results = make(map[string][]interface{})
-	c.responseNotifyer = make(map[string]chan int)
+	c.results = &sync.Map{}
+	c.responseNotifyer = &sync.Map{}
 	c.respMutex = &sync.Mutex{} // c.mutex ensures that sorting is thread safe
 	return
 }
@@ -58,7 +58,7 @@ func (c *Client) executeRequest(query string, bindings, rebindings map[string]st
 		log.Println(err)
 		return
 	}
-	c.responseNotifyer[id] = make(chan int, 1)
+	c.responseNotifyer.Store(id, make(chan int, 1))
 	c.dispatchRequest(msg)
 	resp = c.retrieveResponse(id)
 	return
