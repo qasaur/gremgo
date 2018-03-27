@@ -45,8 +45,9 @@ func (ws *Ws) read() (msg []byte, err error) {
 	return
 }
 
-func (ws *Ws) close() {
-	ws.conn.Close()
+func (ws *Ws) close() (err error) {
+	err = ws.conn.Close()
+	return
 }
 
 /////
