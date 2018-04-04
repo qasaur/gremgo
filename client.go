@@ -52,7 +52,11 @@ func Dial(conn dialer) (c Client, err error) {
 }
 
 func (c *Client) executeRequest(query string, bindings, rebindings map[string]string) (resp interface{}, err error) {
-	req, id := prepareRequest(query, bindings, rebindings)
+	req, id, err := prepareRequest(query, bindings, rebindings)
+	if err != nil {
+		return
+	}
+
 	msg, err := packageRequest(req)
 	if err != nil {
 		log.Println(err)
