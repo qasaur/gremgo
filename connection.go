@@ -3,6 +3,7 @@ package gremgo
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -28,10 +29,18 @@ type Ws struct {
 
 func (ws *Ws) connect() (err error) {
 	d := websocket.Dialer{
-		WriteBufferSize: 8192,
-		ReadBufferSize:  8192,
+		WriteBufferSize:  8192,
+		ReadBufferSize:   8192,
+		HandshakeTimeout: 5 * time.Second, // Timeout or else we'll hang forever and never fail on bad hosts.
 	}
 	ws.conn, _, err = d.Dial(ws.host, http.Header{})
+	if err != nil {
+
+		// As of 3.2.2 the URL has changed.
+		// https://groups.google.com/forum/#!msg/gremlin-users/x4hiHsmTsHM/Xe4GcPtRCAAJ
+		ws.host = ws.host + "/gremlin"
+		ws.conn, _, err = d.Dial(ws.host, http.Header{})
+	}
 	return
 }
 
