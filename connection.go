@@ -12,7 +12,7 @@ type dialer interface {
 	connect() error
 	write([]byte) error
 	read() ([]byte, error)
-	close()
+	close() error
 }
 
 /////
