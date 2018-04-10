@@ -28,8 +28,12 @@ type request struct {
 
 // prepareRequest packages a query and binding into the format that Gremlin Server accepts
 func prepareRequest(query string, bindings, rebindings map[string]string) (req request, id string, err error) {
-	id = uuid.NewV4().String()
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return
+	}
 
+	id = uuid.String()
 	req.Requestid = id
 	req.Op = "eval"
 	req.Processor = ""
