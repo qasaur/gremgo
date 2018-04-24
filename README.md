@@ -29,8 +29,14 @@ import (
 )
 
 func main() {
+	errs := make(chan error)
+	go func(chan error) {
+		err := <-errs
+		log.Fatal("Lost connection to the database: " + err.Error())
+	}(errs) // Example of connection error handling logic
+
 	dialer := gremgo.NewDialer("127.0.0.1:8182") // Returns a WebSocket dialer to connect to Gremlin Server
-	g, err := gremgo.Dial(dialer) // Returns a gremgo client to interact with
+	g, err := gremgo.Dial(dialer, errs) // Returns a gremgo client to interact with
 	if err != nil {
 		fmt.Println(err)
     	return

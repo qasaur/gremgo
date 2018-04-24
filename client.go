@@ -34,7 +34,7 @@ func newClient() (c Client) {
 }
 
 // Dial returns a gremgo client for interaction with the Gremlin Server specified in the host IP.
-func Dial(conn dialer) (c Client, err error) {
+func Dial(conn dialer, errs chan error) (c Client, err error) {
 
 	c = newClient()
 	c.conn = conn
@@ -45,8 +45,8 @@ func Dial(conn dialer) (c Client, err error) {
 		return
 	}
 
-	go c.writeWorker()
-	go c.readWorker()
+	go c.writeWorker(errs)
+	go c.readWorker(errs)
 
 	return
 }
