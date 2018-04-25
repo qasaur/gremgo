@@ -54,12 +54,11 @@ func (c *Client) saveResponse(resp response) {
 	}
 	newdata := append(container, resp.data)  // Create new data container with new data
 	c.results.Store(resp.requestid, newdata) // Add new data to buffer for future retrieval
-	if resp.code == 200 || resp.code == 204 {
-		respNofifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
-		respNofifier.(chan int) <- 1
+	respNotifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+	if resp.code != 206 {
+		respNotifier.(chan int) <- 1
 	}
 	c.respMutex.Unlock()
-	return
 }
 
 // retrieveResponse retrieves the response saved by saveResponse.
