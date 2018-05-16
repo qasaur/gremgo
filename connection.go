@@ -1,7 +1,6 @@
 package gremgo
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -61,13 +60,13 @@ func (ws *Ws) close() (err error) {
 
 /////
 
-func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches messages as soon as it recieves them
+func (c *Client) writeWorker(errs chan error) { // writeWorker works on a loop and dispatches messages as soon as it recieves them
 	for {
 		select {
 		case msg := <-c.requests:
 			err := c.conn.write(msg)
 			if err != nil {
-				log.Println(err)
+				errs <- err
 				c.Errored = true
 				break
 			}
@@ -75,11 +74,11 @@ func (c *Client) writeWorker() { // writeWorker works on a loop and dispatches m
 	}
 }
 
-func (c *Client) readWorker() { // readWorker works on a loop and sorts messages as soon as it recieves them
+func (c *Client) readWorker(errs chan error) { // readWorker works on a loop and sorts messages as soon as it recieves them
 	for {
 		msg, err := c.conn.read()
 		if err != nil {
-			log.Println(err)
+			errs <- err
 			c.Errored = true
 			break
 		}
