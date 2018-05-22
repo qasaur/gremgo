@@ -93,3 +93,35 @@ func TestRequestDispatch(t *testing.T) {
 		t.Fail()
 	}
 }
+
+// TestAuthRequestDispatch tests the ability for a requester to send a request to the client for writing to Gremlin Server
+func TestAuthRequestDispatch(t *testing.T) {
+	id := "1d6d02bd-8e56-421d-9438-3bd6d0079ff1"
+	testRequest, err := prepareAuthRequest(id, "test", "root")
+
+	c := newClient()
+	msg, err := packageRequest(testRequest)
+	if err != nil {
+		t.Error(err)
+	}
+	c.dispatchRequest(msg)
+	req := <-c.requests // c.requests is the channel where all requests are sent for writing to Gremlin Server, write workers listen on this channel
+	if reflect.DeepEqual(msg, req) != true {
+		t.Fail()
+	}
+}
+
+// TestAuthRequestPreparation tests the ability to create successful authentication request
+func TestAuthRequestPreparation(t *testing.T) {
+	id := "1d6d02bd-8e56-421d-9438-3bd6d0079ff1"
+	testRequest, err := prepareAuthRequest(id, "test", "root")
+	if err != nil {
+		t.Fail()
+	}
+	if testRequest.Requestid != id || testRequest.Processor != "trasversal" || testRequest.Op != "authentication" {
+		t.Fail()
+	}
+	if len(testRequest.Args) != 1 || testRequest.Args["sasl"] == "" {
+		t.Fail()
+	}
+}

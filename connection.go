@@ -12,6 +12,7 @@ type dialer interface {
 	write([]byte) error
 	read() ([]byte, error)
 	close() error
+	getAuth() *auth
 }
 
 /////
@@ -24,6 +25,13 @@ WebSocket Connection
 type Ws struct {
 	host string
 	conn *websocket.Conn
+	auth *auth
+}
+
+//Auth is the container for authentication data of dialer
+type auth struct {
+	username string
+	password string
 }
 
 func (ws *Ws) connect() (err error) {
@@ -56,6 +64,13 @@ func (ws *Ws) read() (msg []byte, err error) {
 func (ws *Ws) close() (err error) {
 	err = ws.conn.Close()
 	return
+}
+
+func (ws *Ws) getAuth() *auth{
+	if ws.auth == nil {
+		panic("You must create a Secure Dialer for authenticate with the server")
+	}
+	return ws.auth
 }
 
 /////

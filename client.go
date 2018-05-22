@@ -20,7 +20,17 @@ type Client struct {
 // NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
 func NewDialer(host string) (dialer *Ws) {
 	dialer = new(Ws)
-	dialer.host = "ws://" + host
+
+	dialer.host = host
+	return dialer
+}
+
+// NewDialer returns a WebSocket dialer to use when connecting to Gremlin Server
+func NewSecureDialer(host string, username string, password string) (dialer *Ws) {
+	dialer = new(Ws)
+
+	dialer.host = host
+	dialer.auth = &auth{username:username, password:password}
 	return dialer
 }
 
@@ -65,6 +75,23 @@ func (c *Client) executeRequest(query string, bindings, rebindings map[string]st
 	c.responseNotifyer.Store(id, make(chan int, 1))
 	c.dispatchRequest(msg)
 	resp = c.retrieveResponse(id)
+	return
+}
+
+func (c *Client) authenticate(requestId string) (err error){
+	auth := c.conn.getAuth()
+	req, err := prepareAuthRequest(requestId, auth.username, auth.password)
+	if err != nil {
+		return
+	}
+
+	msg, err := packageRequest(req)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	c.dispatchRequest(msg)
 	return
 }
 

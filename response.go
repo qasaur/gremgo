@@ -16,6 +16,11 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 	if err != nil {
 		return
 	}
+
+	if resp.code == 407 { //Server request authentication
+		return c.authenticate(resp.requestid)
+	}
+
 	c.saveResponse(resp)
 	return
 }
@@ -54,7 +59,8 @@ func (c *Client) saveResponse(resp response) {
 	}
 	newdata := append(container, resp.data)  // Create new data container with new data
 	c.results.Store(resp.requestid, newdata) // Add new data to buffer for future retrieval
-	respNotifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+	respNotifier, load := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+	_=load
 	if resp.code != 206 {
 		respNotifier.(chan int) <- 1
 	}

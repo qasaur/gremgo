@@ -3,6 +3,7 @@ package gremgo
 import (
 	"reflect"
 	"testing"
+	"log"
 )
 
 /*
@@ -15,6 +16,10 @@ var dummySuccessfulResponse = []byte(`{"result":{"data":[{"id": 2,"label": "pers
   ], "meta":{}},
  "requestId":"1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
  "status":{"code":200,"attributes":{},"message":""}}`)
+
+var dummyNeedAuthenticationResponse = []byte(`{"result":{},
+ "requestId":"1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+ "status":{"code":407,"attributes":{},"message":""}}`)
 
 var dummyPartialResponse1 = []byte(`{"result":{"data":[{"id": 2,"label": "person","type": "vertex","properties": [
   {"id": 2, "value": "vadas", "label": "name"},
@@ -34,6 +39,12 @@ var dummySuccessfulResponseMarshalled = response{
 	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      200,
 	data:      "testData",
+}
+
+var dummyNeedAuthenticationResponseMarshalled = response{
+	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	code:      407,
+	data:      "",
 }
 
 var dummyPartialResponse1Marshalled = response{
@@ -58,6 +69,41 @@ func TestResponseHandling(t *testing.T) {
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
 
 	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid)).String() {
+		t.Error("Expected data type does not match actual.")
+	}
+}
+
+func TestResponseAuthHandling(t *testing.T) {
+	c := newClient()
+	ws := new(Ws)
+	ws.auth = &auth{username:"test", password:"test"}
+	c.conn = ws
+
+	c.handleResponse(dummyNeedAuthenticationResponse)
+
+	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.requestid, "test", "test")
+	if err != nil {
+		return
+	}
+
+	sampleAuthRequest, err := packageRequest(req)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	authRequest := <- c.requests //Simulate that client send auth challenge to server
+
+	if !reflect.DeepEqual(authRequest, sampleAuthRequest){
+		t.Error("Expected data type does not match actual.")
+	}
+
+	c.handleResponse(dummySuccessfulResponse) //If authentication is successful the server returns the origin petition
+
+	var expectedSuccessful []interface{}
+	expectedSuccessful = append(expectedSuccessful, dummySuccessfulResponseMarshalled.data)
+
+	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid)).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
