@@ -19,7 +19,7 @@ type requester interface {
 
 // request is a container for all evaluation request parameters to be sent to the Gremlin Server.
 type request struct {
-	Requestid string                 `json:"requestId"`
+	RequestId string                 `json:"requestId"`
 	Op        string                 `json:"op"`
 	Processor string                 `json:"processor"`
 	Args      map[string]interface{} `json:"args"`
@@ -29,11 +29,9 @@ type request struct {
 
 // prepareRequest packages a query and binding into the format that Gremlin Server accepts
 func prepareRequest(query string, bindings, rebindings map[string]string) (req request, id string, err error) {
-	uid, err := uuid.NewV4()
+	id = uuid.NewV4().String()
 
-	id = uid.String()
-
-	req.Requestid = id
+	req.RequestId = id
 	req.Op = "eval"
 	req.Processor = ""
 
@@ -48,7 +46,7 @@ func prepareRequest(query string, bindings, rebindings map[string]string) (req r
 
 //prepareAuthRequest creates a ws request for Gremlin Server
 func prepareAuthRequest(requestId string, username string, password string) (req request, err error) {
-	req.Requestid = requestId
+	req.RequestId = requestId
 	req.Op = "authentication"
 	req.Processor = "trasversal"
 

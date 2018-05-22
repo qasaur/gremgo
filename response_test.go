@@ -36,25 +36,25 @@ var dummyPartialResponse2 = []byte(`{"result":{"data":[{"id": 4,"label": "person
  "status":{"code":200,"attributes":{},"message":""}}`)
 
 var dummySuccessfulResponseMarshalled = response{
-	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      200,
 	data:      "testData",
 }
 
 var dummyNeedAuthenticationResponseMarshalled = response{
-	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      407,
 	data:      "",
 }
 
 var dummyPartialResponse1Marshalled = response{
-	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      206, // Code 206 indicates that the response is not the terminating response in a sequence of responses
 	data:      "testPartialData1",
 }
 
 var dummyPartialResponse2Marshalled = response{
-	requestid: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 	code:      200,
 	data:      "testPartialData2",
 }
@@ -68,7 +68,7 @@ func TestResponseHandling(t *testing.T) {
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
 
-	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid)).String() {
+	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -81,7 +81,7 @@ func TestResponseAuthHandling(t *testing.T) {
 
 	c.handleResponse(dummyNeedAuthenticationResponse)
 
-	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.requestid, "test", "test")
+	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.requestId, "test", "test")
 	if err != nil {
 		return
 	}
@@ -103,7 +103,7 @@ func TestResponseAuthHandling(t *testing.T) {
 	var expectedSuccessful []interface{}
 	expectedSuccessful = append(expectedSuccessful, dummySuccessfulResponseMarshalled.data)
 
-	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestid)).String() {
+	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -114,8 +114,8 @@ func TestResponseMarshalling(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if dummySuccessfulResponseMarshalled.requestid != resp.requestid || dummySuccessfulResponseMarshalled.code != resp.code {
-		t.Error("Expected requestid and code does not match actual.")
+	if dummySuccessfulResponseMarshalled.requestId != resp.requestId || dummySuccessfulResponseMarshalled.code != resp.code {
+		t.Error("Expected requestId and code does not match actual.")
 	} else if reflect.TypeOf(resp.data).String() != "[]interface {}" {
 		t.Error("Expected data type does not match actual.")
 	}
@@ -131,7 +131,7 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
 
-	result, _ := c.results.Load(dummySuccessfulResponseMarshalled.requestid)
+	result, _ := c.results.Load(dummySuccessfulResponseMarshalled.requestId)
 	if reflect.DeepEqual(result.([]interface{}), expected) != true {
 		t.Fail()
 	}
@@ -149,20 +149,20 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
 	expected = append(expected, dummyPartialResponse2Marshalled.data)
 
-	results, _ := c.results.Load(dummyPartialResponse1Marshalled.requestid)
+	results, _ := c.results.Load(dummyPartialResponse1Marshalled.requestId)
 	if reflect.DeepEqual(results.([]interface{}), expected) != true {
 		t.Fail()
 	}
 }
 
-// TestResponseRetrieval tests the ability for a requester to retrieve the response for a specified requestid generated when sending the request
+// TestResponseRetrieval tests the ability for a requester to retrieve the response for a specified requestId generated when sending the request
 func TestResponseRetrieval(t *testing.T) {
 	c := newClient()
 
 	c.saveResponse(dummyPartialResponse1Marshalled)
 	c.saveResponse(dummyPartialResponse2Marshalled)
 
-	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestid)
+	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestId)
 
 	var expected []interface{}
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
@@ -180,9 +180,9 @@ func TestResponseDeletion(t *testing.T) {
 	c.saveResponse(dummyPartialResponse1Marshalled)
 	c.saveResponse(dummyPartialResponse2Marshalled)
 
-	c.deleteResponse(dummyPartialResponse1Marshalled.requestid)
+	c.deleteResponse(dummyPartialResponse1Marshalled.requestId)
 
-	if _, ok := c.results.Load(dummyPartialResponse1Marshalled.requestid); ok {
+	if _, ok := c.results.Load(dummyPartialResponse1Marshalled.requestId); ok {
 		t.Fail()
 	}
 }
