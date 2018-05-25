@@ -7,7 +7,7 @@ import (
 
 type response struct {
 	data      interface{}
-	requestid string
+	requestId string
 	code      int
 }
 
@@ -16,6 +16,11 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 	if err != nil {
 		return
 	}
+
+	if resp.code == 407 { //Server request authentication
+		return c.authenticate(resp.requestId)
+	}
+
 	c.saveResponse(resp)
 	return
 }
@@ -40,7 +45,7 @@ func marshalResponse(msg []byte) (resp response, err error) {
 		resp.data = result["data"]
 	}
 	err = nil
-	resp.requestid = j["requestId"].(string)
+	resp.requestId = j["requestId"].(string)
 	return
 }
 
@@ -48,13 +53,14 @@ func marshalResponse(msg []byte) (resp response, err error) {
 func (c *Client) saveResponse(resp response) {
 	c.respMutex.Lock()
 	var container []interface{}
-	existingData, ok := c.results.Load(resp.requestid) // Retrieve old data container (for requests with multiple responses)
+	existingData, ok := c.results.Load(resp.requestId) // Retrieve old data container (for requests with multiple responses)
 	if ok {
 		container = existingData.([]interface{})
 	}
 	newdata := append(container, resp.data)  // Create new data container with new data
-	c.results.Store(resp.requestid, newdata) // Add new data to buffer for future retrieval
-	respNotifier, _ := c.responseNotifyer.LoadOrStore(resp.requestid, make(chan int, 1))
+	c.results.Store(resp.requestId, newdata) // Add new data to buffer for future retrieval
+	respNotifier, load := c.responseNotifier.LoadOrStore(resp.requestId, make(chan int, 1))
+	_=load
 	if resp.code != 206 {
 		respNotifier.(chan int) <- 1
 	}
@@ -63,13 +69,13 @@ func (c *Client) saveResponse(resp response) {
 
 // retrieveResponse retrieves the response saved by saveResponse.
 func (c *Client) retrieveResponse(id string) (data []interface{}) {
-	resp, _ := c.responseNotifyer.Load(id)
+	resp, _ := c.responseNotifier.Load(id)
 	n := <-resp.(chan int)
 	if n == 1 {
 		if dataI, ok := c.results.Load(id); ok {
 			data = dataI.([]interface{})
 			close(resp.(chan int))
-			c.responseNotifyer.Delete(id)
+			c.responseNotifier.Delete(id)
 			c.deleteResponse(id)
 		}
 	}

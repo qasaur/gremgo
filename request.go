@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/satori/go.uuid"
+	"encoding/base64"
 )
 
 /////
@@ -18,7 +19,7 @@ type requester interface {
 
 // request is a container for all evaluation request parameters to be sent to the Gremlin Server.
 type request struct {
-	Requestid string                 `json:"requestId"`
+	RequestId string                 `json:"requestId"`
 	Op        string                 `json:"op"`
 	Processor string                 `json:"processor"`
 	Args      map[string]interface{} `json:"args"`
@@ -30,7 +31,7 @@ type request struct {
 func prepareRequest(query string, bindings, rebindings map[string]string) (req request, id string, err error) {
 	id = uuid.NewV4().String()
 
-	req.Requestid = id
+	req.RequestId = id
 	req.Op = "eval"
 	req.Processor = ""
 
@@ -39,6 +40,27 @@ func prepareRequest(query string, bindings, rebindings map[string]string) (req r
 	req.Args["gremlin"] = query
 	req.Args["bindings"] = bindings
 	req.Args["rebindings"] = rebindings
+
+	return
+}
+
+//prepareAuthRequest creates a ws request for Gremlin Server
+func prepareAuthRequest(requestId string, username string, password string) (req request, err error) {
+	req.RequestId = requestId
+	req.Op = "authentication"
+	req.Processor = "trasversal"
+
+	var simpleAuth []byte
+	user := []byte(username)
+	pass := []byte(password)
+
+	simpleAuth = append(simpleAuth, 0)
+	simpleAuth = append(simpleAuth, user...)
+	simpleAuth = append(simpleAuth, 0)
+	simpleAuth = append(simpleAuth, pass...)
+
+	req.Args = make(map[string]interface{})
+	req.Args["sasl"] = base64.StdEncoding.EncodeToString(simpleAuth)
 
 	return
 }
@@ -52,12 +74,8 @@ func packageRequest(req request) (msg []byte, err error) {
 	if err != nil {
 		return
 	}
-
-	mimetype := []byte("application/json")
-	mimetypelen := byte(len(mimetype))
-
-	msg = append(msg, mimetypelen)
-	msg = append(msg, mimetype...)
+	mimeType := []byte("application/vnd.gremlin-v2.0+json")
+	msg = append([]byte{0x21}, mimeType...) //0x21 is the fixed length of mimeType in hex
 	msg = append(msg, j...)
 
 	return
