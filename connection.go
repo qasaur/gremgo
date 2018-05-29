@@ -164,7 +164,7 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 		select {
 		case <-quit:
 			return
-		case <-time.After(200 * time.Millisecond):
+		default:
 			continue
 		}
 	}
