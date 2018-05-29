@@ -50,6 +50,7 @@ func (ws *Ws) connect() (err error) {
 	d := websocket.Dialer{
 		WriteBufferSize:  8192,
 		ReadBufferSize:   8192,
+		HandshakeTimeout: 5 * time.Second, // Timeout or else we'll hang forever and never fail on bad hosts.
 	}
 	ws.conn, _, err = d.Dial(ws.host, http.Header{})
 	if err != nil {
@@ -73,9 +74,6 @@ func (ws *Ws) connect() (err error) {
 }
 
 func (ws *Ws) isConnected() bool {
-	defer ws.Unlock()
-	ws.Lock()
-
 	return ws.connected
 }
 
@@ -166,7 +164,7 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 		select {
 		case <-quit:
 			return
-		case <-time.After(10 * time.Millisecond):
+		case <-time.After(200 * time.Millisecond):
 			continue
 		}
 	}
