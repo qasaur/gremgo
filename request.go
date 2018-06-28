@@ -3,19 +3,16 @@ package gremgo
 import (
 	"encoding/json"
 
-	"github.com/satori/go.uuid"
 	"encoding/base64"
-)
 
-/////
+	"github.com/satori/go.uuid"
+)
 
 type requester interface {
 	prepare() error
 	getID() string
 	getRequest() request
 }
-
-/////
 
 // request is a container for all evaluation request parameters to be sent to the Gremlin Server.
 type request struct {
@@ -25,16 +22,34 @@ type request struct {
 	Args      map[string]interface{} `json:"args"`
 }
 
-/////
+// prepareRequest packages a query and binding into the format that Gremlin Server accepts
+func prepareRequest(query string) (req request, id string, err error) {
+	var uuID uuid.UUID
+	uuID, err = uuid.NewV4()
+	if err != nil {
+		return
+	}
+	id = uuID.String()
+
+	req.RequestId = id
+	req.Op = "eval"
+	req.Processor = ""
+
+	req.Args = make(map[string]interface{})
+	req.Args["language"] = "gremlin-groovy"
+	req.Args["gremlin"] = query
+
+	return
+}
 
 // prepareRequest packages a query and binding into the format that Gremlin Server accepts
-func prepareRequest(query string, bindings, rebindings map[string]string) (req request, id string, err error) {
+func prepareRequestWithBindings(query string, bindings, rebindings map[string]string) (req request, id string, err error) {
 	var uuID uuid.UUID
-        uuID, err = uuid.NewV4()
-        if err != nil {
-                return
-        }
-        id = uuID.String()
+	uuID, err = uuid.NewV4()
+	if err != nil {
+		return
+	}
+	id = uuID.String()
 
 	req.RequestId = id
 	req.Op = "eval"
@@ -70,8 +85,6 @@ func prepareAuthRequest(requestId string, username string, password string) (req
 	return
 }
 
-/////
-
 // formatMessage takes a request type and formats it into being able to be delivered to Gremlin Server
 func packageRequest(req request) (msg []byte, err error) {
 
@@ -86,11 +99,7 @@ func packageRequest(req request) (msg []byte, err error) {
 	return
 }
 
-/////
-
 // dispactchRequest sends the request for writing to the remote Gremlin Server
 func (c *Client) dispatchRequest(msg []byte) {
 	c.requests <- msg
 }
-
-/////

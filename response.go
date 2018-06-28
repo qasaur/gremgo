@@ -3,6 +3,7 @@ package gremgo
 import (
 	"encoding/json"
 	"errors"
+	"log"
 )
 
 type response struct {
@@ -32,6 +33,8 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	if err != nil {
 		return
 	}
+	log.Printf("msg: %s", msg)
+	log.Printf("json: %s", j)
 
 	status := j["status"].(map[string]interface{})
 	result := j["result"].(map[string]interface{})
@@ -60,7 +63,7 @@ func (c *Client) saveResponse(resp response) {
 	newdata := append(container, resp.data)  // Create new data container with new data
 	c.results.Store(resp.requestId, newdata) // Add new data to buffer for future retrieval
 	respNotifier, load := c.responseNotifier.LoadOrStore(resp.requestId, make(chan int, 1))
-	_=load
+	_ = load
 	if resp.code != 206 {
 		respNotifier.(chan int) <- 1
 	}
