@@ -17,7 +17,7 @@ func TestRequestPreparation(t *testing.T) {
 	}
 
 	expectedRequest := request{
-		RequestId: id,
+		RequestID: id,
 		Op:        "eval",
 		Processor: "",
 		Args: map[string]interface{}{
@@ -36,7 +36,7 @@ func TestRequestPreparation(t *testing.T) {
 // TestRequestPackaging tests the ability for gremgo to format a request using the established Gremlin Server WebSockets protocol for delivery to the server
 func TestRequestPackaging(t *testing.T) {
 	testRequest := request{
-		RequestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+		RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 		Op:        "eval",
 		Processor: "",
 		Args: map[string]interface{}{
@@ -73,7 +73,7 @@ func TestRequestPackaging(t *testing.T) {
 // TestRequestDispatch tests the ability for a requester to send a request to the client for writing to Gremlin Server
 func TestRequestDispatch(t *testing.T) {
 	testRequest := request{
-		RequestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+		RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
 		Op:        "eval",
 		Processor: "",
 		Args: map[string]interface{}{
@@ -118,7 +118,7 @@ func TestAuthRequestPreparation(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	if testRequest.RequestId != id || testRequest.Processor != "trasversal" || testRequest.Op != "authentication" {
+	if testRequest.RequestID != id || testRequest.Processor != "trasversal" || testRequest.Op != "authentication" {
 		t.Fail()
 	}
 	if len(testRequest.Args) != 1 || testRequest.Args["sasl"] == "" {

@@ -67,7 +67,7 @@ func Dial(conn dialer, errs chan error) (c Client, err error) {
 	return
 }
 
-func (c *Client) executeRequest(query string, bindings, rebindings *map[string]string) (resp interface{}, err error) {
+func (c *Client) executeRequest(query string, bindings, rebindings *map[string]string) (resp []Response, err error) {
 	var req request
 	var id string
 	if bindings != nil && rebindings != nil {
@@ -90,9 +90,9 @@ func (c *Client) executeRequest(query string, bindings, rebindings *map[string]s
 	return
 }
 
-func (c *Client) authenticate(requestId string) (err error) {
+func (c *Client) authenticate(requestID string) (err error) {
 	auth := c.conn.getAuth()
-	req, err := prepareAuthRequest(requestId, auth.username, auth.password)
+	req, err := prepareAuthRequest(requestID, auth.username, auth.password)
 	if err != nil {
 		return
 	}
@@ -108,27 +108,27 @@ func (c *Client) authenticate(requestId string) (err error) {
 }
 
 // ExecuteWithBindings formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
-func (c *Client) ExecuteWithBindings(query string, bindings, rebindings map[string]string) (resp interface{}, err error) {
+func (c *Client) ExecuteWithBindings(query string, bindings, rebindings map[string]string) (resp []Response, err error) {
 	if c.conn.isDisposed() {
-		return nil, errors.New("you cannot write on disposed connection")
+		return resp, errors.New("you cannot write on disposed connection")
 	}
 	resp, err = c.executeRequest(query, &bindings, &rebindings)
 	return
 }
 
 // Execute formats a raw Gremlin query, sends it to Gremlin Server, and returns the result.
-func (c *Client) Execute(query string) (resp interface{}, err error) {
+func (c *Client) Execute(query string) (resp []Response, err error) {
 	if c.conn.isDisposed() {
-		return nil, errors.New("you cannot write on disposed connection")
+		return resp, errors.New("you cannot write on disposed connection")
 	}
 	resp, err = c.executeRequest(query, nil, nil)
 	return
 }
 
 // ExecuteFile takes a file path to a Gremlin script, sends it to Gremlin Server, and returns the result.
-func (c *Client) ExecuteFile(path string, bindings, rebindings map[string]string) (resp interface{}, err error) {
+func (c *Client) ExecuteFile(path string, bindings, rebindings map[string]string) (resp []Response, err error) {
 	if c.conn.isDisposed() {
-		return nil, errors.New("you cannot write on disposed connection")
+		return resp, errors.New("you cannot write on disposed connection")
 	}
 	d, err := ioutil.ReadFile(path) // Read script from file
 	if err != nil {
