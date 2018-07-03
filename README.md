@@ -1,20 +1,24 @@
-# gremgo
+# gremgo-neptune
 
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/qasaur/gremgo) [![Build Status](https://travis-ci.org/qasaur/gremgo.svg?branch=master)](https://travis-ci.org/qasaur/gremgo) [![Go Report Card](https://goreportcard.com/badge/github.com/qasaur/gremgo)](https://goreportcard.com/report/github.com/qasaur/gremgo)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/schwartzmx/gremgo-neptune) [![Build Status](https://travis-ci.org/schwartzmx/gremgo-neptune.svg?branch=master)](https://travis-ci.org/schwartzmx/gremgo-neptune) [![Go Report Card](https://goreportcard.com/badge/github.com/schwartzmx/gremgo-neptune)](https://goreportcard.com/report/github.com/schwartzmx/gremgo-neptune)
+
+gremgo-neptune is a fork of [qasaur/gremgo](https://github.com/qasaur/gremgo) with alterations to make it compatible with [AWS Neptune](https://aws.amazon.com/neptune/) which is a "Fast, reliable graph database built for the cloud".
 
 gremgo is a fast, efficient, and easy-to-use client for the TinkerPop graph database stack. It is a Gremlin language driver which uses WebSockets to interface with Gremlin Server and has a strong emphasis on concurrency and scalability. Please keep in mind that gremgo is still under heavy development and although effort is being made to fully cover gremgo with reliable tests, bugs may be present in several areas.
+
+**Modifications were made to `gremgo` in order to "support" AWS Neptune's lack of Gremlin-specific features,  like no support query bindings among others. See differences in Gremlin support here: [AWS Neptune Gremlin Implementation Differences](https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-differences.html)**
 
 Installation
 ==========
 ```
-go get github.com/qasaur/gremgo
+go get github.com/schwartzmx/gremgo-neptune
 dep ensure
 ```
 
 Documentation
 ==========
 
-* [GoDoc](https://godoc.org/github.com/qasaur/gremgo)
+* [GoDoc](https://godoc.org/github.com/schwartzmx/gremgo-neptune)
 
 Example
 ==========
@@ -25,7 +29,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/qasaur/gremgo"
+	"github.com/schwartzmx/gremgo-neptune"
 )
 
 func main() {
@@ -42,15 +46,13 @@ func main() {
     	return
 	}
 	res, err := g.Execute( // Sends a query to Gremlin Server with bindings
-		"g.V(x)",
-		map[string]string{"x": "1234"},
-		map[string]string{},
+		"g.V(x)"
 	)
 	if err != nil {
 		fmt.Println(err)
     	return
 	}
-	fmt.Println(res)
+	fmt.Printf("%+v", res)
 }
 ```
 
@@ -67,7 +69,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/qasaur/gremgo"
+	"github.com/schwartzmx/gremgo-neptune"
 )
 
 func main() {
@@ -83,16 +85,12 @@ func main() {
 		fmt.Println(err)
     	return
 	}
-	res, err := g.Execute( // Sends a query to Gremlin Server with bindings
-		"g.V(x)",
-		map[string]string{"x": "1234"},
-		map[string]string{},
-	)
+	res, err := g.Execute("g.V(x)")
 	if err != nil {
 		fmt.Println(err)
     	return
 	}
-	fmt.Println(res)
+	fmt.Printf("%+v", res)
 }
 ```
 

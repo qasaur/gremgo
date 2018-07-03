@@ -1,9 +1,9 @@
 package gremgo
 
 import (
+	"log"
 	"reflect"
 	"testing"
-	"log"
 )
 
 /*
@@ -35,28 +35,28 @@ var dummyPartialResponse2 = []byte(`{"result":{"data":[{"id": 4,"label": "person
  "requestId":"1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
  "status":{"code":200,"attributes":{},"message":""}}`)
 
-var dummySuccessfulResponseMarshalled = response{
-	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      200,
-	data:      "testData",
+var dummySuccessfulResponseMarshalled = Response{
+	RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	Status:    Status{Code: 200},
+	Result:    Result{Data: []interface{}{"testData"}},
 }
 
-var dummyNeedAuthenticationResponseMarshalled = response{
-	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      407,
-	data:      "",
+var dummyNeedAuthenticationResponseMarshalled = Response{
+	RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	Status:    Status{Code: 407},
+	Result:    Result{Data: []interface{}{""}},
 }
 
-var dummyPartialResponse1Marshalled = response{
-	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      206, // Code 206 indicates that the response is not the terminating response in a sequence of responses
-	data:      "testPartialData1",
+var dummyPartialResponse1Marshalled = Response{
+	RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	Status:    Status{Code: 206}, // Code 206 indicates that the response is not the terminating response in a sequence of responses
+	Result:    Result{Data: []interface{}{"testPartialData1"}},
 }
 
-var dummyPartialResponse2Marshalled = response{
-	requestId: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
-	code:      200,
-	data:      "testPartialData2",
+var dummyPartialResponse2Marshalled = Response{
+	RequestID: "1d6d02bd-8e56-421d-9438-3bd6d0079ff1",
+	Status:    Status{Code: 200},
+	Result:    Result{Data: []interface{}{"testPartialData2"}},
 }
 
 // TestResponseHandling tests the overall response handling mechanism of gremgo
@@ -65,10 +65,10 @@ func TestResponseHandling(t *testing.T) {
 
 	c.handleResponse(dummySuccessfulResponse)
 
-	var expected []interface{}
-	expected = append(expected, dummySuccessfulResponseMarshalled.data)
+	var expected []Response
+	expected = append(expected, dummySuccessfulResponseMarshalled)
 
-	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
+	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.RequestID)).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -76,12 +76,12 @@ func TestResponseHandling(t *testing.T) {
 func TestResponseAuthHandling(t *testing.T) {
 	c := newClient()
 	ws := new(Ws)
-	ws.auth = &auth{username:"test", password:"test"}
+	ws.auth = &auth{username: "test", password: "test"}
 	c.conn = ws
 
 	c.handleResponse(dummyNeedAuthenticationResponse)
 
-	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.requestId, "test", "test")
+	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.RequestID, "test", "test")
 	if err != nil {
 		return
 	}
@@ -92,18 +92,18 @@ func TestResponseAuthHandling(t *testing.T) {
 		return
 	}
 
-	authRequest := <- c.requests //Simulate that client send auth challenge to server
+	authRequest := <-c.requests //Simulate that client send auth challenge to server
 
-	if !reflect.DeepEqual(authRequest, sampleAuthRequest){
+	if !reflect.DeepEqual(authRequest, sampleAuthRequest) {
 		t.Error("Expected data type does not match actual.")
 	}
 
 	c.handleResponse(dummySuccessfulResponse) //If authentication is successful the server returns the origin petition
 
-	var expectedSuccessful []interface{}
-	expectedSuccessful = append(expectedSuccessful, dummySuccessfulResponseMarshalled.data)
+	var expectedSuccessful []Response
+	expectedSuccessful = append(expectedSuccessful, dummySuccessfulResponseMarshalled)
 
-	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
+	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.RequestID)).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -114,9 +114,9 @@ func TestResponseMarshalling(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if dummySuccessfulResponseMarshalled.requestId != resp.requestId || dummySuccessfulResponseMarshalled.code != resp.code {
+	if dummySuccessfulResponseMarshalled.RequestID != resp.RequestID || dummySuccessfulResponseMarshalled.Status.Code != resp.Status.Code {
 		t.Error("Expected requestId and code does not match actual.")
-	} else if reflect.TypeOf(resp.data).String() != "[]interface {}" {
+	} else if reflect.TypeOf(resp.Result.Data).String() != "[]interface {}" {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -129,9 +129,9 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 	c.saveResponse(dummySuccessfulResponseMarshalled)
 
 	var expected []interface{}
-	expected = append(expected, dummySuccessfulResponseMarshalled.data)
+	expected = append(expected, dummySuccessfulResponseMarshalled)
 
-	result, _ := c.results.Load(dummySuccessfulResponseMarshalled.requestId)
+	result, _ := c.results.Load(dummySuccessfulResponseMarshalled.RequestID)
 	if reflect.DeepEqual(result.([]interface{}), expected) != true {
 		t.Fail()
 	}
@@ -146,10 +146,10 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 	c.saveResponse(dummyPartialResponse2Marshalled)
 
 	var expected []interface{}
-	expected = append(expected, dummyPartialResponse1Marshalled.data)
-	expected = append(expected, dummyPartialResponse2Marshalled.data)
+	expected = append(expected, dummyPartialResponse1Marshalled)
+	expected = append(expected, dummyPartialResponse2Marshalled)
 
-	results, _ := c.results.Load(dummyPartialResponse1Marshalled.requestId)
+	results, _ := c.results.Load(dummyPartialResponse1Marshalled.RequestID)
 	if reflect.DeepEqual(results.([]interface{}), expected) != true {
 		t.Fail()
 	}
@@ -162,11 +162,11 @@ func TestResponseRetrieval(t *testing.T) {
 	c.saveResponse(dummyPartialResponse1Marshalled)
 	c.saveResponse(dummyPartialResponse2Marshalled)
 
-	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestId)
+	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.RequestID)
 
 	var expected []interface{}
-	expected = append(expected, dummyPartialResponse1Marshalled.data)
-	expected = append(expected, dummyPartialResponse2Marshalled.data)
+	expected = append(expected, dummyPartialResponse1Marshalled)
+	expected = append(expected, dummyPartialResponse2Marshalled)
 
 	if reflect.DeepEqual(resp, expected) != true {
 		t.Fail()
@@ -180,9 +180,9 @@ func TestResponseDeletion(t *testing.T) {
 	c.saveResponse(dummyPartialResponse1Marshalled)
 	c.saveResponse(dummyPartialResponse2Marshalled)
 
-	c.deleteResponse(dummyPartialResponse1Marshalled.requestId)
+	c.deleteResponse(dummyPartialResponse1Marshalled.RequestID)
 
-	if _, ok := c.results.Load(dummyPartialResponse1Marshalled.requestId); ok {
+	if _, ok := c.results.Load(dummyPartialResponse1Marshalled.RequestID); ok {
 		t.Fail()
 	}
 }
@@ -207,7 +207,12 @@ var codes = []struct {
 // Tests detection of errors and if an error is generated for a specific error code
 func TestResponseErrorDetection(t *testing.T) {
 	for _, co := range codes {
-		err := responseDetectError(co.code)
+		dummyResponse := Response{
+			RequestID: "",
+			Status:    Status{Code: co.code},
+			Result:    Result{},
+		}
+		err := dummyResponse.detectError()
 		switch {
 		case co.code == 200:
 			if err != nil {
