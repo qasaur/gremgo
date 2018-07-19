@@ -8,7 +8,6 @@ Installation
 ==========
 ```
 go get github.com/qasaur/gremgo
-dep ensure
 ```
 
 Documentation
