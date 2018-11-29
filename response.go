@@ -43,7 +43,7 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	err = responseDetectError(resp.code)
 	if err != nil {
 		resp.data = err // Modify response vehicle to have error (if exists) as data
-		fmt.Println(status)
+		fmt.Println(status["message"])
 	} else {
 		resp.data = result["data"]
 	}
