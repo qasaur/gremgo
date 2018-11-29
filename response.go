@@ -30,8 +30,7 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 func marshalResponse(msg []byte) (resp response, err error) {
 	var j map[string]interface{}
 	err = json.Unmarshal(msg, &j)
-	fmt.Println(msg)
-	fmt.Println(j)
+
 	if err != nil {
 		return
 	}
@@ -44,6 +43,8 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	err = responseDetectError(resp.code)
 	if err != nil {
 		resp.data = err // Modify response vehicle to have error (if exists) as data
+		fmt.Println(status["code"])
+		fmt.Println(status["detailedMessage"])
 	} else {
 		resp.data = result["data"]
 	}
