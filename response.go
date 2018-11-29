@@ -3,6 +3,7 @@ package gremgo
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type response struct {
@@ -40,6 +41,7 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	resp.code = int(code)
 	err = responseDetectError(resp.code)
 	if err != nil {
+		fmt.Println(resp.data)
 		resp.data = err // Modify response vehicle to have error (if exists) as data
 	} else {
 		resp.data = result["data"]
