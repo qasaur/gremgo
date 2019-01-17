@@ -10,6 +10,7 @@ import (
 
 type dialer interface {
 	connect() error
+	//Changed this method to Isconnected from isconnected to make it avail as public method
 	IsConnected() bool
 	isDisposed() bool
 	write([]byte) error
@@ -72,7 +73,7 @@ func (ws *Ws) connect() (err error) {
 	}
 	return
 }
-
+//Changed this method to Isconnected from isconnected to make it avail as public method
 func (ws *Ws) IsConnected() bool {
 	return ws.connected
 }
