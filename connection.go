@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 type dialer interface {
@@ -48,8 +49,8 @@ type auth struct {
 
 func (ws *Ws) connect() (err error) {
 	d := websocket.Dialer{
-		WriteBufferSize:  8192,
-		ReadBufferSize:   8192,
+		WriteBufferSize:  4194304,
+		ReadBufferSize:   4194304,
 		HandshakeTimeout: 5 * time.Second, // Timeout or else we'll hang forever and never fail on bad hosts.
 	}
 	ws.conn, _, err = d.Dial(ws.host, http.Header{})
