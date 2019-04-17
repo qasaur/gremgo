@@ -3,7 +3,6 @@ package gremgo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 type response struct {
@@ -14,14 +13,14 @@ type response struct {
 
 func (c *Client) handleResponse(msg []byte) (err error) {
 	resp, err := marshalResponse(msg)
-	if err != nil {
-		return
-	}
 
 	if resp.code == 407 { //Server request authentication
 		return c.authenticate(resp.requestId)
 	}
 
+	if err != nil {
+		return
+	}
 	c.saveResponse(resp)
 	return
 }
@@ -36,19 +35,13 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	}
 
 	status := j["status"].(map[string]interface{})
-	result := j["result"].(map[string]interface{})
 	code := status["code"].(float64)
 
+	resp.data = j
 	resp.code = int(code)
-	err = responseDetectError(resp.code)
-	if err != nil {
-		resp.data = err // Modify response vehicle to have error (if exists) as data
-		fmt.Println(status["message"])
-	} else {
-		resp.data = result["data"]
-	}
-	err = nil
 	resp.requestId = j["requestId"].(string)
+
+	err = responseDetectError(resp.code)
 	return
 }
 
