@@ -161,7 +161,6 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 			err = c.handleResponse(msg)
 		}
 		if err != nil {
-			errs <- err
 			c.Errored = true
 			break
 		}
