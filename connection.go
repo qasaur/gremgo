@@ -1,7 +1,6 @@
 package gremgo
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -160,8 +159,6 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 		}
 		if msg != nil {
 			err = c.handleResponse(msg)
-			fmt.Println("Msg not null")
-			fmt.Println("Msg not null err: ", err)
 		}
 		if err != nil {
 			errs <- err
