@@ -118,8 +118,7 @@ func TestResponseMarshalling(t *testing.T) {
 	}
 	if dummySuccessfulResponseMarshalled.requestId != resp.requestId || dummySuccessfulResponseMarshalled.code != resp.code {
 		t.Error("Expected requestId and code does not match actual.")
-	} else if reflect.TypeOf(resp.data).String() != "[]interface {}" {
-		fmt.Println(reflect.TypeOf(resp.data).String())
+	} else if reflect.TypeOf(resp.data).String() != "map[string]interface {}" {
 		t.Error("Expected data type does not match actual.")
 	}
 }

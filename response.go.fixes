@@ -25,6 +25,7 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 	return
 }
 
+// marshalResponse creates a response struct for every incoming response for further manipulation
 func marshalResponse(msg []byte) (resp response, err error) {
 	var j map[string]interface{}
 	err = json.Unmarshal(msg, &j)
@@ -34,17 +35,13 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	}
 
 	status := j["status"].(map[string]interface{})
-	result := j["result"].(map[string]interface{})
 	code := status["code"].(float64)
 
+	resp.data = j
 	resp.code = int(code)
-	err = responseDetectError(resp.code)
-	if err != nil {
-		resp.data = status
-	} else {
-		resp.data = result["data"]
-	}
 	resp.requestId = j["requestId"].(string)
+
+	err = responseDetectError(resp.code)
 	return
 }
 
