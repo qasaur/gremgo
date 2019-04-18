@@ -6,6 +6,16 @@ import (
 	"fmt"
 )
 
+type GremlinError struct {
+	Attributes interface{} `json:"attributes" omitempty`
+	Code float64 `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *GremlinError) Error() string {
+	return fmt.Sprint("code: ", e.Code, " ; message:", e.Message)
+}
+
 type response struct {
 	data      interface{}
 	requestId string
@@ -15,11 +25,14 @@ type response struct {
 func (c *Client) handleResponse(msg []byte) (err error) {
 	resp, err := marshalResponse(msg)
 	if err != nil {
-		return
-	}
-
-	if resp.code == 407 { //Server request authentication
-		return c.authenticate(resp.requestId)
+		switch e := err.(type) {
+		case *GremlinError:
+			if int(e.Code) == 407 { //Server request authentication
+				return c.authenticate(resp.requestId)
+			}
+		default:
+			return e
+		}
 	}
 
 	c.saveResponse(resp)
@@ -37,17 +50,21 @@ func marshalResponse(msg []byte) (resp response, err error) {
 
 	status := j["status"].(map[string]interface{})
 	result := j["result"].(map[string]interface{})
-	code := status["code"].(float64)
+	gremErr := GremlinError{nil, status["code"].(float64), status["message"].(string)}
 
-	resp.code = int(code)
+	resp.code = int(gremErr.Code)
 	err = responseDetectError(resp.code)
 	if err != nil {
 		resp.data = err // Modify response vehicle to have error (if exists) as data
-		fmt.Println(status["message"])
 	} else {
 		resp.data = result["data"]
 	}
-	err = nil
+
+	// If we have valid error convert that to GremlinError
+	if err != nil {
+		err = &gremErr
+	}
+
 	resp.requestId = j["requestId"].(string)
 	return
 }
