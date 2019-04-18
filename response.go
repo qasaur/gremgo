@@ -3,6 +3,7 @@ package gremgo
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type response struct {
@@ -13,18 +14,19 @@ type response struct {
 
 func (c *Client) handleResponse(msg []byte) (err error) {
 	resp, err := marshalResponse(msg)
+	if err != nil {
+		return
+	}
 
 	if resp.code == 407 { //Server request authentication
 		return c.authenticate(resp.requestId)
 	}
 
-	if err != nil {
-		return
-	}
 	c.saveResponse(resp)
 	return
 }
 
+// marshalResponse creates a response struct for every incoming response for further manipulation
 func marshalResponse(msg []byte) (resp response, err error) {
 	var j map[string]interface{}
 	err = json.Unmarshal(msg, &j)
@@ -40,10 +42,12 @@ func marshalResponse(msg []byte) (resp response, err error) {
 	resp.code = int(code)
 	err = responseDetectError(resp.code)
 	if err != nil {
-		resp.data = status
+		resp.data = err // Modify response vehicle to have error (if exists) as data
+		fmt.Println(status["message"])
 	} else {
 		resp.data = result["data"]
 	}
+	err = nil
 	resp.requestId = j["requestId"].(string)
 	return
 }

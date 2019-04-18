@@ -1,7 +1,6 @@
 package gremgo
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 	"log"
@@ -80,8 +79,7 @@ func TestResponseAuthHandling(t *testing.T) {
 	ws.auth = &auth{username:"test", password:"test"}
 	c.conn = ws
 
-	err := c.handleResponse(dummyNeedAuthenticationResponse)
-	fmt.Println("test handleResponse:", err)
+	c.handleResponse(dummyNeedAuthenticationResponse)
 
 	req, err := prepareAuthRequest(dummyNeedAuthenticationResponseMarshalled.requestId, "test", "test")
 	if err != nil {
@@ -119,7 +117,6 @@ func TestResponseMarshalling(t *testing.T) {
 	if dummySuccessfulResponseMarshalled.requestId != resp.requestId || dummySuccessfulResponseMarshalled.code != resp.code {
 		t.Error("Expected requestId and code does not match actual.")
 	} else if reflect.TypeOf(resp.data).String() != "[]interface {}" {
-		fmt.Println(reflect.TypeOf(resp.data).String())
 		t.Error("Expected data type does not match actual.")
 	}
 }
