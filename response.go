@@ -17,7 +17,7 @@ func (e *GremlinError) Error() string {
 }
 
 type response struct {
-	data      []byte
+	data      interface{}
 	requestId string
 	code      int
 }
@@ -52,14 +52,17 @@ func marshalResponse(msg []byte) (resp response, err error) {
 
 	resp.code = int(gremErr.Code)
 	err = responseDetectError(resp.code)
-		// resp.data = result["data"]
+	if err != nil {
+		resp.data = err // Modify response vehicle to have error (if exists) as data
+	} else {
+		resp.data = result["data"]
+	}
 
 	// If we have valid error convert that to GremlinError
 	if err != nil {
 		err = &gremErr
 	}
 
-	resp.data, _ = json.Marshal(result["data"]) // FIXME: Handle this error
 	resp.requestId = j["requestId"].(string)
 	return
 }
@@ -69,12 +72,12 @@ func (c *Client) saveResponse(resp response, err error) {
 	c.respMutex.Lock()
 
 	// Retrieve old data container (for requests with multiple responses)
-	var container []byte
+	var container []interface{}
 	existingData, ok := c.results.Load(resp.requestId)
 	if ok {
-		container = existingData.([]byte)
+		container = existingData.([]interface{})
 	}
-	newData := append(container[:], resp.data[:]...)  // Create new data container with new data
+	newData := append(container, resp.data)  // Create new data container with new data
 	c.results.Store(resp.requestId, newData) // Add new data to buffer for future retrieval
 
 	// if err is not nil, set it to map
@@ -92,7 +95,7 @@ func (c *Client) saveResponse(resp response, err error) {
 }
 
 // retrieveResponse retrieves the response saved by saveResponse.
-func (c *Client) retrieveResponse(id string) (data interface{}, err error) {
+func (c *Client) retrieveResponse(id string) (data []interface{}, err error) {
 	resp, _ := c.responseNotifier.Load(id)
 	n := <-resp.(chan int)
 	if n == 1 {
@@ -103,7 +106,7 @@ func (c *Client) retrieveResponse(id string) (data interface{}, err error) {
 			}
 
 			// Capture data now
-			data = dataI.(interface{})
+			data = dataI.([]interface{})
 			close(resp.(chan int))
 			c.responseNotifier.Delete(id)
 			c.deleteResponse(id)
