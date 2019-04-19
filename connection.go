@@ -158,11 +158,7 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 			break
 		}
 		if msg != nil {
-			err = c.handleResponse(msg)
-		}
-		if err != nil {
-			c.Errored = true
-			break
+			c.handleResponse(msg)
 		}
 
 		select {

@@ -67,8 +67,8 @@ func TestResponseHandling(t *testing.T) {
 
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
-
-	if reflect.TypeOf(expected).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
+	data, _ := c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)
+	if reflect.TypeOf(expected).String() != reflect.TypeOf(data).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -103,7 +103,8 @@ func TestResponseAuthHandling(t *testing.T) {
 	var expectedSuccessful []interface{}
 	expectedSuccessful = append(expectedSuccessful, dummySuccessfulResponseMarshalled.data)
 
-	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)).String() {
+	data, _ := c.retrieveResponse(dummySuccessfulResponseMarshalled.requestId)
+	if reflect.TypeOf(expectedSuccessful).String() != reflect.TypeOf(data).String() {
 		t.Error("Expected data type does not match actual.")
 	}
 }
@@ -126,7 +127,7 @@ func TestResponseSortingSingleResponse(t *testing.T) {
 
 	c := newClient()
 
-	c.saveResponse(dummySuccessfulResponseMarshalled)
+	c.saveResponse(dummySuccessfulResponseMarshalled, nil)
 
 	var expected []interface{}
 	expected = append(expected, dummySuccessfulResponseMarshalled.data)
@@ -142,8 +143,8 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 
 	c := newClient()
 
-	c.saveResponse(dummyPartialResponse1Marshalled)
-	c.saveResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled, nil)
+	c.saveResponse(dummyPartialResponse2Marshalled, nil)
 
 	var expected []interface{}
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
@@ -159,10 +160,10 @@ func TestResponseSortingMultipleResponse(t *testing.T) {
 func TestResponseRetrieval(t *testing.T) {
 	c := newClient()
 
-	c.saveResponse(dummyPartialResponse1Marshalled)
-	c.saveResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled, nil)
+	c.saveResponse(dummyPartialResponse2Marshalled, nil)
 
-	resp := c.retrieveResponse(dummyPartialResponse1Marshalled.requestId)
+	resp, _ := c.retrieveResponse(dummyPartialResponse1Marshalled.requestId)
 
 	var expected []interface{}
 	expected = append(expected, dummyPartialResponse1Marshalled.data)
@@ -177,8 +178,8 @@ func TestResponseRetrieval(t *testing.T) {
 func TestResponseDeletion(t *testing.T) {
 	c := newClient()
 
-	c.saveResponse(dummyPartialResponse1Marshalled)
-	c.saveResponse(dummyPartialResponse2Marshalled)
+	c.saveResponse(dummyPartialResponse1Marshalled, nil)
+	c.saveResponse(dummyPartialResponse2Marshalled, nil)
 
 	c.deleteResponse(dummyPartialResponse1Marshalled.requestId)
 
