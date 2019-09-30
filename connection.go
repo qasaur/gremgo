@@ -17,6 +17,7 @@ type dialer interface {
 	close() error
 	getAuth() *auth
 	ping(errs chan error)
+	connStr() string
 }
 
 /////
@@ -44,6 +45,10 @@ type Ws struct {
 type auth struct {
 	username string
 	password string
+}
+
+func (ws *Ws) connStr() string {
+	return ws.host
 }
 
 func (ws *Ws) connect() (err error) {
@@ -117,7 +122,8 @@ func (ws *Ws) ping(errs chan error) {
 		case <-ticker.C:
 			connected := true
 			if err := ws.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(ws.writingWait)); err != nil {
-				errs <- err
+				gNErr := GremlinNetworkError{nil, -1, err.Error(), ws.connStr()}
+				errs <- gNErr
 				connected = false
 			}
 			ws.Lock()
@@ -138,7 +144,8 @@ func (c *Client) writeWorker(errs chan error, quit chan struct{}) { // writeWork
 		case msg := <-c.requests:
 			err := c.conn.write(msg)
 			if err != nil {
-				errs <- err
+				gNErr := GremlinNetworkError{nil, -1, err.Error(), c.conn.connStr()}
+				errs <- gNErr
 				c.Errored = true
 				break
 			}
@@ -153,7 +160,8 @@ func (c *Client) readWorker(errs chan error, quit chan struct{}) { // readWorker
 	for {
 		msg, err := c.conn.read()
 		if err != nil {
-			errs <- err
+			gNErr := GremlinNetworkError{nil, -1, err.Error(), c.conn.connStr()}
+			errs <- gNErr
 			c.Errored = true
 			break
 		}
