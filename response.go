@@ -3,7 +3,18 @@ package gremgo
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
+
+type GremlinError struct {
+	Attributes interface{} `json:"attributes" omitempty`
+	Code float64 `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *GremlinError) Error() string {
+	return fmt.Sprint("code: ", e.Code, " ; message:", e.Message)
+}
 
 type response struct {
 	data      interface{}
@@ -14,14 +25,15 @@ type response struct {
 func (c *Client) handleResponse(msg []byte) (err error) {
 	resp, err := marshalResponse(msg)
 	if err != nil {
-		return
+		switch e := err.(type) {
+		case *GremlinError:
+			if int(e.Code) == 407 { //Server request authentication
+				return c.authenticate(resp.requestId)
+			}
+		}
 	}
 
-	if resp.code == 407 { //Server request authentication
-		return c.authenticate(resp.requestId)
-	}
-
-	c.saveResponse(resp)
+	c.saveResponse(resp, err)
 	return
 }
 
@@ -29,50 +41,71 @@ func (c *Client) handleResponse(msg []byte) (err error) {
 func marshalResponse(msg []byte) (resp response, err error) {
 	var j map[string]interface{}
 	err = json.Unmarshal(msg, &j)
+
 	if err != nil {
 		return
 	}
 
 	status := j["status"].(map[string]interface{})
 	result := j["result"].(map[string]interface{})
-	code := status["code"].(float64)
+	gremErr := GremlinError{nil, status["code"].(float64), status["message"].(string)}
 
-	resp.code = int(code)
+	resp.code = int(gremErr.Code)
 	err = responseDetectError(resp.code)
 	if err != nil {
 		resp.data = err // Modify response vehicle to have error (if exists) as data
 	} else {
 		resp.data = result["data"]
 	}
-	err = nil
+
+	// If we have valid error convert that to GremlinError
+	if err != nil {
+		err = &gremErr
+	}
+
 	resp.requestId = j["requestId"].(string)
 	return
 }
 
 // saveResponse makes the response available for retrieval by the requester. Mutexes are used for thread safety.
-func (c *Client) saveResponse(resp response) {
+func (c *Client) saveResponse(resp response, err error) {
 	c.respMutex.Lock()
+
+	// Retrieve old data container (for requests with multiple responses)
 	var container []interface{}
-	existingData, ok := c.results.Load(resp.requestId) // Retrieve old data container (for requests with multiple responses)
+	existingData, ok := c.results.Load(resp.requestId)
 	if ok {
 		container = existingData.([]interface{})
 	}
-	newdata := append(container, resp.data)  // Create new data container with new data
-	c.results.Store(resp.requestId, newdata) // Add new data to buffer for future retrieval
-	respNotifier, load := c.responseNotifier.LoadOrStore(resp.requestId, make(chan int, 1))
-	_=load
+	newData := append(container, resp.data)  // Create new data container with new data
+	c.results.Store(resp.requestId, newData) // Add new data to buffer for future retrieval
+
+	// if err is not nil, set it to map
+	if err != nil {
+		c.resultsErr.Store(resp.requestId, err)
+	}
+
+	respNotifier, _ := c.responseNotifier.LoadOrStore(resp.requestId, make(chan int, 1))
+
 	if resp.code != 206 {
 		respNotifier.(chan int) <- 1
 	}
+
 	c.respMutex.Unlock()
 }
 
 // retrieveResponse retrieves the response saved by saveResponse.
-func (c *Client) retrieveResponse(id string) (data []interface{}) {
+func (c *Client) retrieveResponse(id string) (data []interface{}, err error) {
 	resp, _ := c.responseNotifier.Load(id)
 	n := <-resp.(chan int)
 	if n == 1 {
 		if dataI, ok := c.results.Load(id); ok {
+			// Capture error first
+			if errI, ok := c.resultsErr.Load(id); ok {
+				err = errI.(error)
+			}
+
+			// Capture data now
 			data = dataI.([]interface{})
 			close(resp.(chan int))
 			c.responseNotifier.Delete(id)
@@ -85,6 +118,7 @@ func (c *Client) retrieveResponse(id string) (data []interface{}) {
 // deleteRespones deletes the response from the container. Used for cleanup purposes by requester.
 func (c *Client) deleteResponse(id string) {
 	c.results.Delete(id)
+	c.resultsErr.Delete(id)
 	return
 }
 

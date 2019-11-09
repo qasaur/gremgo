@@ -14,6 +14,7 @@ type Client struct {
 	requests         chan []byte
 	responses        chan []byte
 	results          *sync.Map
+	resultsErr       *sync.Map
 	responseNotifier *sync.Map // responseNotifier notifies the requester that a response has arrived for the request
 	respMutex        *sync.Mutex
 	Errored          bool
@@ -44,6 +45,7 @@ func newClient() (c Client) {
 	c.requests = make(chan []byte, 3)  // c.requests takes any request and delivers it to the WriteWorker for dispatch to Gremlin Server
 	c.responses = make(chan []byte, 3) // c.responses takes raw responses from ReadWorker and delivers it for sorting to handelResponse
 	c.results = &sync.Map{}
+	c.resultsErr = &sync.Map{}
 	c.responseNotifier = &sync.Map{}
 	c.respMutex = &sync.Mutex{} // c.mutex ensures that sorting is thread safe
 	return
@@ -82,7 +84,7 @@ func (c *Client) executeRequest(query string, bindings, rebindings map[string]st
 	}
 	c.responseNotifier.Store(id, make(chan int, 1))
 	c.dispatchRequest(msg)
-	resp = c.retrieveResponse(id)
+	resp, err = c.retrieveResponse(id)
 	return
 }
 
