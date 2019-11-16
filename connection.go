@@ -10,7 +10,7 @@ import (
 
 type dialer interface {
 	connect() error
-	isConnected() bool
+	IsConnected() bool
 	isDisposed() bool
 	write([]byte) error
 	read() ([]byte, error)
@@ -77,8 +77,7 @@ func (ws *Ws) connect() (err error) {
 	}
 	return
 }
-
-func (ws *Ws) isConnected() bool {
+func (ws *Ws) IsConnected() bool {
 	return ws.connected
 }
 
